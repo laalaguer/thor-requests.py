@@ -3,21 +3,19 @@ VeChain Thor for humans.
 ```python
 from thor_requests import Connect, Wallet, Contract, Function, Manager
 
-# chaintag can be derived from block_0
-connector = Connect(url='')
-
 wallet = Wallet.fromPrivate(private=b'')
 wallet = Wallet.fromKeyStore(file_path='', k_json='')
 wallet = Wallet.fromMnemonic(words=[])
-wallet.sign()
 
 contract = Contract(meta_json='', meta_file_path='')
-function = Function(abi_json='')
 
-manager = Mananger()
-
-manager.call(connector, wallet, contract, method_name, method_params)
-manager.call(connector, wallet, function, function_params)
-manager.deploy(connector, wallet, byte_code='')
-manager.estimate()
+# chaintag can be derived from block_0
+connector = Connect(url='')
+connector.get_account(address='')
+connector.get_chain_tag()
+connector.get_block(revision='best')
+connector.get_block_ref()
+connector.call(wallet, contract, method_name, method_params, to, value=0, gas=None)
+connector.emulate()
+connector.deploy(wallet, contract)
 ```
