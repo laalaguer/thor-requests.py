@@ -46,3 +46,6 @@ class Wallet():
         ''' Verify signature if signed by us. '''
         public_key = secp256k1.recover(msg_hash, signature)
         return public_key == self.public
+    
+    def getAddress(self) -> str:
+        return self.address

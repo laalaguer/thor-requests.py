@@ -7,8 +7,8 @@ wallet = Wallet.fromPrivate(private=b'')
 wallet = Wallet.fromKeyStore(k_json='')
 wallet = Wallet.fromMnemonic(words=[])
 
+contract = Contract(meta_dict='')
 contract = Contract.fromFile(meta_file='')
-contract = Contract.fromJson(meta_dict='')
 
 # chaintag can be derived from block_0
 connector = Connect(url='')
