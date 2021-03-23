@@ -1,7 +1,7 @@
 import copy
 from typing import Union
 import requests
-from .utils import build_url, calc_blockRef, calc_chaintag, calc_nonce, emulate_failed, emulated_vm_gases
+from .utils import build_url, calc_blockRef, calc_chaintag, calc_nonce, any_emulate_failed, read_vm_gases
 from .wallet import Wallet
 from thor_devkit import abi, cry, transaction
 
@@ -25,12 +25,24 @@ class Connect():
         if not (r.status_code == 200):
             raise Exception(f'Cant connect to {url}, error {r.text}')
         return r.json()
-    
+
     def get_chainTag(self) -> int:
         ''' Fetch ChainTag from the remote network '''
         b = self.get_block(0)
         return calc_chaintag(b['id'][-2:])
     
+    def get_tx(self, tx_id: str) -> Union[dict, None]:
+        ''' Fetch a transaction, if not found then None '''
+        url = build_url(self.url, f'/transactions/{tx_id}')
+        r = requests.get(url, headers={'accept':'application/json'})
+        if not (r.status_code == 200):
+            raise Exception(f'Cant connect to {url}, error {r.text}')
+        return r.json()
+
+    def replay_tx(self, tx_id: str) -> dict:
+        ''' Using the emulate function to replay the tx softly (for debug) '''
+        pass
+
     def emulate_tx_body(self, wallet: Wallet, tx_body: dict, block:str = "best"):
         '''
         Emulate execution of a transaction
@@ -73,10 +85,10 @@ class Connect():
         }
 
         responses = self.emulate_tx_body(wallet, body)
-        if emulate_failed(responses):
+        if is_emulate_failed(responses):
             raise Exception(f'Emulation failed: {responses}')
         
-        gases = emulated_vm_gases(responses)
+        gases = read_vm_gases(responses)
         if gas and gas < gases[0]:
             raise Exception(f'gas {gas} < emulated vm gas result {gases[0]}')
         
@@ -90,14 +102,14 @@ class Connect():
             body['gas'] = gases[0] + intrinsic_gas + 15000
 
         return body
-    
+
     def build_tx_unsigned(self, tx_body: dict, encode=False) -> Union[transaction.Transaction, str]:
         tx = transaction.Transaction(tx_body)
         if encode:
             return '0x' + tx.encode().hex()
         else:
             return tx
-    
+
     def build_tx_signed(self, wallet: Wallet, tx_body: dict, encode=False) -> Union[transaction.Transaction, str]:
         tx = self.build_tx_unsigned(tx_body)
         message_hash = tx.get_signing_hash()
