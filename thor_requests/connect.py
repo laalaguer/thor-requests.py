@@ -1,121 +1,196 @@
-import copy
-from typing import Union
+from typing import Union, List
 import requests
-from .utils import build_url, calc_blockRef, calc_chaintag, calc_nonce, any_emulate_failed, read_vm_gases
+from .utils import (
+    build_tx_body,
+    build_url,
+    calc_blockRef,
+    calc_chaintag,
+    calc_emulate_tx_body,
+    calc_nonce,
+    any_emulate_failed,
+    is_readonly,
+    read_vm_gases,
+)
 from .wallet import Wallet
+from .contract import Contract
 from thor_devkit import abi, cry, transaction
 
-class Connect():
-    ''' Connect to VeChain '''
+
+class Connect:
+    """ Connect to VeChain """
+
     def __init__(self, url):
         self.url = url
 
-    def get_account(self, address: str, block:str = "best") -> dict:
-        ''' Query account status against the "best" block (or your choice)'''
-        url = build_url(self.url, f'/accounts/{address}?revision={block}')
-        r = requests.get(url, headers={'accept':'application/json'})
+    def get_account(self, address: str, block: str = "best") -> dict:
+        """ Query account status against the "best" block (or your choice)"""
+        url = build_url(self.url, f"/accounts/{address}?revision={block}")
+        r = requests.get(url, headers={"accept": "application/json"})
         if not (r.status_code == 200):
-            raise Exception(f'Cant connect to {url}, error {r.text}')
+            raise Exception(f"Cant connect to {url}, error {r.text}")
         return r.json()
 
-    def get_block(self, id_or_number: str = 'best') -> dict:
-        ''' Get a block by id or number, default get "best" block '''
-        url = build_url(self.url, f'blocks/{id_or_number}')
-        r = requests.get(url, headers={'accept':'application/json'})
+    def get_block(self, id_or_number: str = "best") -> dict:
+        """ Get a block by id or number, default get "best" block """
+        url = build_url(self.url, f"blocks/{id_or_number}")
+        r = requests.get(url, headers={"accept": "application/json"})
         if not (r.status_code == 200):
-            raise Exception(f'Cant connect to {url}, error {r.text}')
+            raise Exception(f"Cant connect to {url}, error {r.text}")
         return r.json()
 
     def get_chainTag(self) -> int:
-        ''' Fetch ChainTag from the remote network '''
+        """ Fetch ChainTag from the remote network """
         b = self.get_block(0)
-        return calc_chaintag(b['id'][-2:])
-    
+        return calc_chaintag(b["id"][-2:])
+
     def get_tx(self, tx_id: str) -> Union[dict, None]:
-        ''' Fetch a transaction, if not found then None '''
-        url = build_url(self.url, f'/transactions/{tx_id}')
-        r = requests.get(url, headers={'accept':'application/json'})
+        """ Fetch a transaction, if not found then None """
+        url = build_url(self.url, f"/transactions/{tx_id}")
+        r = requests.get(url, headers={"accept": "application/json"})
         if not (r.status_code == 200):
-            raise Exception(f'Cant connect to {url}, error {r.text}')
+            raise Exception(f"Cant connect to {url}, error {r.text}")
         return r.json()
 
-    def replay_tx(self, tx_id: str) -> dict:
-        ''' Using the emulate function to replay the tx softly (for debug) '''
-        pass
-
-    def emulate_tx_body(self, wallet: Wallet, tx_body: dict, block:str = "best"):
-        '''
-        Emulate execution of a transaction
-
+    def emulate(self, emulate_tx_body: dict, block: str = "best"):
+        """
+        Helper function. Use with caution.
         The response json structure please view README.md
-        '''
-        emulate_body = copy.deepcopy(tx_body)
-        emulate_body['caller'] = wallet.getAddress()
-        del emulate_body["chainTag"]
-        del emulate_body["gasPriceCoef"]
-        del emulate_body["dependsOn"]
-        del emulate_body["nonce"]
-        url = build_url(self.url, f'/accounts/*')
-        r = requests.post(url, headers={'accept': 'application/json','Content-Type': 'application/json'}, json=emulate_body)
+        """
+        url = build_url(self.url, f"/accounts/*?revision={block}")
+        r = requests.post(
+            url,
+            headers={"accept": "application/json", "Content-Type": "application/json"},
+            json=emulate_tx_body,
+        )
         if not (r.status_code == 200):
             raise Exception(f"HTTP error: {r.status_code} {r.text}")
 
         return r.json()
 
-    def build_tx_body(self, wallet: Wallet, to, value, data, gas:int=None, dependsOn=None) -> dict:
-        block = self.get_block('best')
-        blockRef = calc_blockRef(block['id'])
-        nonce = calc_nonce()
-        chainTag = self.get_chainTag()
-        body = {
-            "chainTag": chainTag,
-            "blockRef": blockRef,
-            "expiration": 32,
-            "clauses": [
-                {
-                    "to": to,
-                    "value": value,
-                    "data": data
-                }
-            ],
-            "gasPriceCoef": 0,
-            # "gas": gas,
-            "dependsOn": dependsOn,
-            "nonce": nonce
-        }
+    def debug_tx(self, tx_id: str) -> dict:
+        """
+        Use the emulate function to replay the tx softly (for debug)
+        Usually when you replay the tx to see what's wrong.
+        """
+        tx = self.get_tx(tx_id)
+        if not tx:
+            raise Exception(f"tx: {tx_id} not found")
 
-        responses = self.emulate_tx_body(wallet, body)
-        if is_emulate_failed(responses):
-            raise Exception(f'Emulation failed: {responses}')
-        
-        gases = read_vm_gases(responses)
-        if gas and gas < gases[0]:
-            raise Exception(f'gas {gas} < emulated vm gas result {gases[0]}')
-        
-        body['gas'] = 0
-        tx = transaction.Transaction(body)
-        intrinsic_gas = tx.get_intrinsic_gas()
-        
-        if gas:
-            body['gas'] = gas + intrinsic_gas + 15000
+        caller = tx["origin"]
+        target_block = tx["meta"]["blockID"]
+        emulate_body = calc_emulate_tx_body(caller, tx)
+        if tx["delegator"]:
+            emulate_body["gasPayer"] = tx["delegator"]
+
+        return self.emulate(emulate_body, target_block)
+
+    def emulate_tx(self, address: str, tx_body: dict, block: str = "best"):
+        """
+        Use the emulate function to emulate execution of a transaction.
+        """
+        emulate_body = calc_emulate_tx_body(address, tx_body)
+        return self.emulate(emulate_body, block)
+
+    def call(
+        self,
+        caller: str,
+        contract: Contract,
+        func_name: str,
+        params: List,
+        to: str,
+        value=0,
+        gas=0,
+    ):
+        """
+        Call a contract method (read-only), this won't create change on blockchain.
+        Only emulation happens. Response type view README.md
+        This is a single transaction, single clause call.
+
+        If function has return value, it will be included in "decoded"
+        """
+        abi_dict = contract.get_abi(func_name)
+        if not abi_dict:
+            raise Exception(f"Function {func_name} not found on the contract")
+
+        # if not is_readonly(abi_dict):
+        #     raise Exception(
+        #         f"Function {func_name} is not read-only, it is {abi_dict['stateMutability']}"
+        #     )
+
+        f = abi.Function(abi.FUNCTION(abi_dict))
+        data = f.encode(params, to_hex=True)  # Tx clause data
+        clause = {"to": to, "value": str(value), "data": data}
+        tx_body = build_tx_body(
+            [clause],
+            self.get_chainTag(),
+            calc_blockRef(self.get_block("best")["id"]),
+            calc_nonce(),
+            gas=gas,
+        )
+
+        e_response = self.emulate_tx(caller, tx_body)
+        failed = any_emulate_failed(e_response)
+        if failed:
+            return e_response
         else:
-            body['gas'] = gases[0] + intrinsic_gas + 15000
+            first_clause = e_response[0]
+            if first_clause["data"] and first_clause["data"] != "0x":
+                first_clause["decoded"] = f.decode(
+                    bytes.fromhex(first_clause["data"][2:])  # Remove '0x'
+                )
+            return first_clause
 
-        return body
+    def commit(
+        self,
+        wallet: Wallet,
+        contract: Contract,
+        func_name: str,
+        params: List,
+        to,
+        value=0,
+        gas=0,
+    ):
+        """ Call a contract method (not emulate), will create change to blockchain """
+        pass
 
-    def build_tx_unsigned(self, tx_body: dict, encode=False) -> Union[transaction.Transaction, str]:
-        tx = transaction.Transaction(tx_body)
-        if encode:
-            return '0x' + tx.encode().hex()
-        else:
-            return tx
+    def deploy(self, wallet: Wallet, contract: Contract):
+        """ Deploy a smart contract onto blockchain """
+        pass
 
-    def build_tx_signed(self, wallet: Wallet, tx_body: dict, encode=False) -> Union[transaction.Transaction, str]:
-        tx = self.build_tx_unsigned(tx_body)
-        message_hash = tx.get_signing_hash()
-        signature = wallet.sign(message_hash)
-        tx.set_signature(signature)
-        if encode:
-            return '0x' + tx.encode().hex()
-        else:
-            return tx
+    # def build_tx(
+    #     self, wallet: Wallet, to, value, data, gas: int = None, dependsOn=None
+    # ) -> dict:
+    #     """ Build Tx, sign it and estimate gas for it """
+    #     block = self.get_block("best")
+    #     blockRef = calc_blockRef(block["id"])
+    #     nonce = calc_nonce()
+    #     chainTag = self.get_chainTag()
+    #     body = {
+    #         "chainTag": chainTag,  #
+    #         "blockRef": blockRef,
+    #         "expiration": 32,
+    #         "clauses": [{"to": to, "value": value, "data": data}],
+    #         "gasPriceCoef": 0,  #
+    #         # "gas": gas,
+    #         "dependsOn": dependsOn,  #
+    #         "nonce": nonce,  #
+    #     }
+
+    #     responses = self.emulate_tx_body(wallet, body)
+    #     if any_emulate_failed(responses):
+    #         raise Exception(f"Emulation failed: {responses}")
+
+    #     gases = read_vm_gases(responses)
+    #     if gas and gas < gases[0]:
+    #         raise Exception(f"gas {gas} < emulated vm gas result {gases[0]}")
+
+    #     body["gas"] = 0
+    #     tx = transaction.Transaction(body)
+    #     intrinsic_gas = tx.get_intrinsic_gas()
+
+    #     if gas:
+    #         body["gas"] = gas + intrinsic_gas + 15000
+    #     else:
+    #         body["gas"] = gases[0] + intrinsic_gas + 15000
+
+    #     return body

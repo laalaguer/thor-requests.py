@@ -1,9 +1,30 @@
-from thor_requests import connect
-from thor_requests import wallet
+from thor_requests.connect import Connect
+from thor_requests.wallet import Wallet
+from thor_requests.contract import Contract
 
-w = wallet.Wallet.fromPrivateKey(bytes.fromhex('dce1443bd2ef0c2631adc1c67e5c93f13dc23a41c18b536effbbdcbcdb96fb65'))
-c = connect.Connect('http://solo.veblocks.net')
-print(c.get_tx('0x6dd1d4263cb084cd22304bb9fbbdb434005bd87ce090a1e48ffb0403bd7a8c8f'))
+w = Wallet.fromPrivateKey(
+    bytes.fromhex("dce1443bd2ef0c2631adc1c67e5c93f13dc23a41c18b536effbbdcbcdb96fb65")
+)
+c = Connect("http://testnet.veblocks.net")
+# print(c.get_tx("0xda2ce6bddfb3bd32541c999e81ef56019a6314a23c90a466896aeefca33aebc1"))
+# print(c.debug_tx("0xda2ce6bddfb3bd32541c999e81ef56019a6314a23c90a466896aeefca33aebc1"))
+
+
+con = Contract.fromFile("./VVET9.json")
+vvet_addr = "0x535b9a56c2f03a3658fc8787c44087574eb381fd"
+
+res = c.call(
+    w.getAddress(),
+    con,
+    "balanceOf",
+    [w.getAddress()],
+    vvet_addr,
+)
+print(res)
+
+# res = c.call(w.getAddress(), con, "deposit", [], vvet_addr, value=4)
+# print(res)
+
 # tx_body = {
 #   "clauses": [
 #     {

@@ -17,6 +17,5 @@ connector.get_chain_tag()
 connector.get_block(revision='best')
 connector.get_block_ref()
 connector.call(wallet, contract, method_name, method_params, to, value=0, gas=None)
-connector.emulate(wallet, contract, method_name, method_params, to, value)
 connector.deploy(wallet, contract)
 ```
