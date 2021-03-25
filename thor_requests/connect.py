@@ -8,6 +8,7 @@ from .utils import (
     calc_emulate_tx_body,
     calc_nonce,
     any_emulate_failed,
+    calc_revertReason,
     is_readonly,
     read_vm_gases,
 )
@@ -65,7 +66,13 @@ class Connect:
         if not (r.status_code == 200):
             raise Exception(f"HTTP error: {r.status_code} {r.text}")
 
-        return r.json()
+        all_responses = r.json()
+        for response in all_responses:
+            if response["reverted"] == True and response["data"] != "0x":
+                response["decoded"] = {
+                    "revertReason": calc_revertReason(response["data"])
+                }
+        return all_responses
 
     def debug_tx(self, tx_id: str) -> dict:
         """
@@ -103,10 +110,10 @@ class Connect:
     ):
         """
         Call a contract method (read-only), this won't create change on blockchain.
-        Only emulation happens. Response type view README.md
+        Only emulation happens. Response type view README.md.
         This is a single transaction, single clause call.
 
-        If function has return value, it will be included in "decoded"
+        If function has return value, it will be included in "decoded".
         """
         abi_dict = contract.get_abi(func_name)
         if not abi_dict:
@@ -134,10 +141,24 @@ class Connect:
             return e_response
         else:
             first_clause = e_response[0]
+            # decode the "return data" from the function call
             if first_clause["data"] and first_clause["data"] != "0x":
                 first_clause["decoded"] = f.decode(
                     bytes.fromhex(first_clause["data"][2:])  # Remove '0x'
                 )
+            # decode the "event" from the function call
+            if len(first_clause["events"]):
+                for each_event in first_clause["events"]:
+                    if each_event["address"].lower() == to.lower():
+                        e_obj = contract.get_event_by_signature(
+                            bytes.fromhex(each_event["topics"][0][2:])
+                        )
+                        if e_obj:
+                            each_event["decoded"] = e_obj.decode(
+                                bytes.fromhex(each_event["data"][2:]),
+                                [bytes.fromhex(x[2:]) for x in each_event["topics"]],
+                            )
+                            each_event["name"] = e_obj.get_name()
             return first_clause
 
     def commit(

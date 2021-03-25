@@ -30,7 +30,7 @@
 ```python
 [
   {
-    "data": "0x",
+    "data": "0x", # if we have data here then it is Error(string) type of data
     "events": [],
     "transfers": [],
     "gasUsed": 0,

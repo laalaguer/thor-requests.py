@@ -169,3 +169,31 @@ def is_readonly(abi_dict: dict):
     return (
         abi_dict["stateMutability"] == "view" or abi_dict["stateMutability"] == "pure"
     )
+
+
+def calc_revertReason(data: str) -> str:
+    """
+    Extract revert reason from data
+
+    Parameters
+    ----------
+    data : str
+        "0x...." string of data
+
+    Returns
+    -------
+    str
+        revert reason in string
+
+    Raises
+    ------
+    Exception
+        If the revert reason data is not in good shape
+    """
+    if not data.startswith("0x08c379a0"):  # abi encoded of "Error(string)"
+        raise Exception(f"{data.hex()} is not a valid error message")
+
+    message = abi.Coder.decode_single(
+        "string", bytes.fromhex(data.replace("0x08c379a0", ""))
+    )
+    return message

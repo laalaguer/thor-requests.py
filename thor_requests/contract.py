@@ -1,6 +1,7 @@
 """ Contract is a representation of an underlying Solidity compiled JSON """
 from typing import Union, List
 from .utils import read_json_file
+from thor_devkit import abi
 
 
 class Contract:
@@ -17,7 +18,7 @@ class Contract:
         return bytes.fromhex(self.contract_meta[key])
 
     def get_abi(self, func_name: str) -> Union[dict, None]:
-        """ Get specific ABI by function name, or None if not found """
+        """ Get specific ABI by function/event name, or None if not found """
         abis = self.contract_meta["abi"]
         targets = [each for each in abis if each.get("name") == func_name]
         assert len(targets) <= 1  # Zero or at most, one found.
@@ -26,6 +27,27 @@ class Contract:
         else:
             return None
 
-    def get_abis(self) -> List:
+    def get_abis(self) -> List[dict]:
         """ Get ABIs of this contract as a list """
         return self.contract_meta["abi"]
+
+    def get_events(self) -> List[dict]:
+        """ Get events from the abi sections """
+        return [each for each in self.get_abis() if each.get("type") == "event"]
+
+    def get_event_by_signature(self, signature: bytes) -> Union[abi.Event, None]:
+        """
+        Get target event from contract meta by signatuer string.
+
+        Parameters
+        ----------
+        signature : bytes
+            32 bytes
+        """
+        events = [abi.EVENT(each) for each in self.get_events()]
+        events_obj_list = [abi.Event(each) for each in events]
+        events_dict = {each.signature: each for each in events_obj_list}
+        if signature in events_dict:
+            return events_dict[signature]
+        else:
+            return None

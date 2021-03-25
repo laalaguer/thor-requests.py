@@ -7,22 +7,22 @@ w = Wallet.fromPrivateKey(
 )
 c = Connect("http://testnet.veblocks.net")
 # print(c.get_tx("0xda2ce6bddfb3bd32541c999e81ef56019a6314a23c90a466896aeefca33aebc1"))
-# print(c.debug_tx("0xda2ce6bddfb3bd32541c999e81ef56019a6314a23c90a466896aeefca33aebc1"))
+print(c.debug_tx("0x1d05a502db56ba46ccd258a5696b9b78cd83de6d0d67f22b297f37e710a72bb5"))
 
 
-con = Contract.fromFile("./VVET9.json")
-vvet_addr = "0x535b9a56c2f03a3658fc8787c44087574eb381fd"
+# vvet_contract = Contract.fromFile("./VVET9.json")
+# vvet_addr = "0x535b9a56c2f03a3658fc8787c44087574eb381fd"
 
-res = c.call(
-    w.getAddress(),
-    con,
-    "balanceOf",
-    [w.getAddress()],
-    vvet_addr,
-)
-print(res)
+# # res = c.call(
+# #     w.getAddress(),
+# #     vvet_contract,
+# #     "balanceOf",
+# #     [w.getAddress()],
+# #     vvet_addr,
+# # )
+# # print(res)
 
-# res = c.call(w.getAddress(), con, "deposit", [], vvet_addr, value=4)
+# res = c.call(w.getAddress(), vvet_contract, "deposit", [], vvet_addr, value=4)
 # print(res)
 
 # tx_body = {
