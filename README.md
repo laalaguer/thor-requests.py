@@ -13,5 +13,5 @@ $ make install
 ```bash
 # activate environment & run exmample
 $ source .env/bin/activat
-$ python3 example-debugy.py
+$ python3 example-debug.py
 ```
