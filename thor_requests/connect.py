@@ -245,9 +245,13 @@ class Connect:
         )
 
         e_responses = self.emulate_tx(caller, tx_body)
+        if len(e_responses) > 1:
+            raise Exception(
+                f"Emulation should contain 1 clause but has {len(e_responses)}"
+            )
         failed = any_emulate_failed(e_responses)
         if failed:
-            return e_responses
+            return e_responses[0]
         else:
             first_clause = e_responses[0]
             # decode the "return data" from the function call
@@ -284,6 +288,8 @@ class Connect:
         Call a contract method,
         Similar to "call()" but will create state change to blockchain.
         And will spend gas.
+
+        Return value see post_tx()
         """
         abi_dict = contract.get_abi(func_name)
         if not abi_dict:
@@ -319,51 +325,29 @@ class Connect:
         if gas and gas < _supposed_safe_gas:
             raise Exception(f"gas {gas} < emulated gas {_supposed_safe_gas}")
 
-        # fill out the gas for user.
+        # Fill out the gas for user.
         if not gas:
             tx_body["gas"] = _supposed_safe_gas
 
         encoded_raw = calc_tx_signed(wallet, tx_body, True)
         return self.post_tx(encoded_raw)
 
-    def deploy(self, wallet: Wallet, contract: Contract):
-        """ Deploy a smart contract onto blockchain """
-        pass
+    def deploy(
+        self,
+        wallet: Wallet,
+        contract: Contract,
+        params_types: list,  # Constructor params types
+        params: list,  # Constructor params
+        value=0,  # send VET in Wei
+    ):
+        """
+        Deploy a smart contract to blockchain
+        This would be a single transaction.
 
-    # def build_tx(
-    #     self, wallet: Wallet, to, value, data, gas: int = None, dependsOn=None
-    # ) -> dict:
-    #     """ Build Tx, sign it and estimate gas for it """
-    #     block = self.get_block("best")
-    #     blockRef = calc_blockRef(block["id"])
-    #     nonce = calc_nonce()
-    #     chainTag = self.get_chainTag()
-    #     body = {
-    #         "chainTag": chainTag,  #
-    #         "blockRef": blockRef,
-    #         "expiration": 32,
-    #         "clauses": [{"to": to, "value": value, "data": data}],
-    #         "gasPriceCoef": 0,  #
-    #         # "gas": gas,
-    #         "dependsOn": dependsOn,  #
-    #         "nonce": nonce,  #
-    #     }
-
-    #     responses = self.emulate_tx_body(wallet, body)
-    #     if any_emulate_failed(responses):
-    #         raise Exception(f"Emulation failed: {responses}")
-
-    #     gases = read_vm_gases(responses)
-    #     if gas and gas < gases[0]:
-    #         raise Exception(f"gas {gas} < emulated vm gas result {gases[0]}")
-
-    #     body["gas"] = 0
-    #     tx = transaction.Transaction(body)
-    #     intrinsic_gas = tx.get_intrinsic_gas()
-
-    #     if gas:
-    #         body["gas"] = gas + intrinsic_gas + 15000
-    #     else:
-    #         body["gas"] = gases[0] + intrinsic_gas + 15000
-
-    #     return body
+        Parameters
+        ----------
+        wallet : Wallet
+            Deployer wallet
+        contract : Contract
+            Smart contract meta
+        """

@@ -59,7 +59,7 @@ def calc_chaintag(hex_str: str) -> int:
 
 
 def calc_gas(vm_gas: int, intrinsic_gas: int) -> int:
-    """ Calculate recommended gas from some parts """
+    """ Calculate recommended (safe) gas """
     return vm_gas + intrinsic_gas + 15000
 
 
