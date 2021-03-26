@@ -7,7 +7,7 @@ w = Wallet.fromPrivateKey(
 )
 c = Connect("http://testnet.veblocks.net")
 # print(c.get_tx("0xda2ce6bddfb3bd32541c999e81ef56019a6314a23c90a466896aeefca33aebc1"))
-print(c.debug_tx("0x1d05a502db56ba46ccd258a5696b9b78cd83de6d0d67f22b297f37e710a72bb5"))
+print(c.replay_tx("0x1d05a502db56ba46ccd258a5696b9b78cd83de6d0d67f22b297f37e710a72bb5"))
 
 
 # vvet_contract = Contract.fromFile("./VVET9.json")

@@ -52,10 +52,29 @@ class Connect:
             raise Exception(f"Cant connect to {url}, error {r.text}")
         return r.json()
 
-    def emulate(self, emulate_tx_body: dict, block: str = "best"):
+    def emulate(self, emulate_tx_body: dict, block: str = "best") -> List[dict]:
         """
         Helper function. Use with caution.
+        Upload a tx body for emulation,
+        Get a list of execution responses (as the tx has multiple clauses).
         The response json structure please view README.md
+
+        Parameters
+        ----------
+        emulate_tx_body : dict
+            Emulate Tx body, not a normal tx body.
+        block : str, optional
+            Target at which block, by default "best"
+
+        Returns
+        -------
+        List[dict]
+            A list of clause execution results. (within the tx)
+
+        Raises
+        ------
+        Exception
+            If http has error.
         """
         url = build_url(self.url, f"/accounts/*?revision={block}")
         r = requests.post(
@@ -74,10 +93,25 @@ class Connect:
                 }
         return all_responses
 
-    def debug_tx(self, tx_id: str) -> dict:
+    def replay_tx(self, tx_id: str) -> List[dict]:
         """
         Use the emulate function to replay the tx softly (for debug)
         Usually when you replay the tx to see what's wrong.
+
+        Parameters
+        ----------
+        tx_id : str
+            Existing tx id
+
+        Returns
+        -------
+        List[dict]
+            A list of clause execution results. (within the tx)
+
+        Raises
+        ------
+        Exception
+            If tx id doesn't exist
         """
         tx = self.get_tx(tx_id)
         if not tx:
