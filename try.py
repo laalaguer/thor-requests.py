@@ -7,39 +7,25 @@ w = Wallet.fromPrivateKey(
 )
 c = Connect("http://testnet.veblocks.net")
 # print(c.get_tx("0xda2ce6bddfb3bd32541c999e81ef56019a6314a23c90a466896aeefca33aebc1"))
-print(c.replay_tx("0x1d05a502db56ba46ccd258a5696b9b78cd83de6d0d67f22b297f37e710a72bb5"))
+# print(c.replay_tx("0x1d05a502db56ba46ccd258a5696b9b78cd83de6d0d67f22b297f37e710a72bb5"))
 
+vvet_contract = Contract.fromFile("./VVET9.json")
+vvet_addr = "0x535b9a56c2f03a3658fc8787c44087574eb381fd"
 
-# vvet_contract = Contract.fromFile("./VVET9.json")
-# vvet_addr = "0x535b9a56c2f03a3658fc8787c44087574eb381fd"
+# Emulate call the "balanceOf()" function
+# res = c.call(
+#     w.getAddress(),
+#     vvet_contract,
+#     "balanceOf",
+#     [w.getAddress()],
+#     vvet_addr,
+# )
+# print(res)
 
-# # res = c.call(
-# #     w.getAddress(),
-# #     vvet_contract,
-# #     "balanceOf",
-# #     [w.getAddress()],
-# #     vvet_addr,
-# # )
-# # print(res)
-
+# Emulate call the "depost()" function.
 # res = c.call(w.getAddress(), vvet_contract, "deposit", [], vvet_addr, value=4)
 # print(res)
 
-# tx_body = {
-#   "clauses": [
-#     {
-#       "to": "0x5034aa590125b64023a0262112b98d72e3c8e40e",
-#       "value": "0xde0b6b3a7640000",
-#       "data": "0x5665436861696e2054686f72"
-#     }
-#   ],
-#   "gas": 1,
-#   "gasPrice": "1000000000000000",
-#   "caller": "0x7567d83b7b8d80addcb281a71d54fc7b3364ffed",
-#   "provedWork": "1000",
-#   "gasPayer": "0xd3ae78222beadb038203be21ed5ce7c9b1bff602",
-#   "expiration": 1000,
-#   "blockRef": "0x00000000851caf3c"
-# }
-
-# print(c.build_tx_body(w, "0x5034aa590125b64023a0262112b98d72e3c8e40e", "0xde0b6b3a7640000", "0x5665436861696e2054686f72"))
+# Real call the "deposit()" function. (will pay gas)
+res = c.commit(w, vvet_contract, "deposit", [], vvet_addr, value=5 * (10 ** 18))
+print(res)

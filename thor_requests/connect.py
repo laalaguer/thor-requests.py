@@ -1,3 +1,4 @@
+import time
 from typing import Union, List
 import requests
 from .utils import (
@@ -9,8 +10,11 @@ from .utils import (
     calc_nonce,
     any_emulate_failed,
     calc_revertReason,
+    calc_tx_signed,
+    calc_tx_unsigned,
     is_readonly,
     read_vm_gases,
+    calc_gas,
 )
 from .wallet import Wallet
 from .contract import Contract
@@ -52,6 +56,72 @@ class Connect:
             raise Exception(f"Cant connect to {url}, error {r.text}")
         return r.json()
 
+    def post_tx(self, raw: str) -> dict:
+        """
+        Post tx to remote node. Get response.
+
+        Parameters
+        ----------
+        raw : str
+            '0x....' raw tx
+
+        Returns
+        -------
+        dict
+            post response
+
+        Raises
+        ------
+        Exception
+            http exception
+        """
+        url = build_url(self.url, "transactions")
+        r = requests.post(
+            url,
+            headers={"accept": "application/json", "Content-Type": "application/json"},
+            json={"raw": raw},
+        )
+        if not (r.status_code == 200):
+            raise Exception(f"Creation error? HTTP: {r.status_code} {r.text}")
+
+        return r.json()
+
+    def get_tx_receipt(self, tx_id: str) -> Union[dict, None]:
+        """ Fetch tx receipt as a dict, or None """
+        url = build_url(self.url, f"transactions/{tx_id}/receipt")
+        r = requests.get(url, headers={"accept": "application/json"})
+        if not (r.status_code == 200):
+            raise Exception(f"Creation error? HTTP: {r.status_code} {r.text}")
+
+        return r.json()
+
+    def wait_for_tx_receipt(self, tx_id: str, wait_for: int = 20) -> dict:
+        """
+        Wait for tx receipt, for several seconds
+
+        Parameters
+        ----------
+        tx_id : str
+            tx id
+        wait_for : int, optional
+            seconds, by default 20
+
+        Returns
+        -------
+        dict
+            The receipt or None
+        """
+        interval = 3
+        rounds = wait_for // interval
+        receipt = None
+        for _ in range(rounds):
+            receipt = self.get_tx_receipt(tx_id)
+            if receipt:
+                return receipt
+            else:
+                time.sleep(3)
+        return None
+
     def emulate(self, emulate_tx_body: dict, block: str = "best") -> List[dict]:
         """
         Helper function. Use with caution.
@@ -86,6 +156,7 @@ class Connect:
             raise Exception(f"HTTP error: {r.status_code} {r.text}")
 
         all_responses = r.json()
+        # decode the "revert" reason if emulation failed
         for response in all_responses:
             if response["reverted"] == True and response["data"] != "0x":
                 response["decoded"] = {
@@ -140,8 +211,9 @@ class Connect:
         params: List,
         to: str,
         value=0,
-        gas=0,
-    ):
+        gas=0,  # Note: value is in Wei
+        strict_mode=False,
+    ) -> dict:
         """
         Call a contract method (read-only), this won't create change on blockchain.
         Only emulation happens. Response type view README.md.
@@ -153,12 +225,15 @@ class Connect:
         if not abi_dict:
             raise Exception(f"Function {func_name} not found on the contract")
 
-        # if not is_readonly(abi_dict):
-        #     raise Exception(
-        #         f"Function {func_name} is not read-only, it is {abi_dict['stateMutability']}"
-        #     )
+        # In strict mode you can only call "read-only" functions.
+        # Non-strict mode you can emulate "state changing" functions.
+        if strict_mode:
+            if not is_readonly(abi_dict):
+                raise Exception(
+                    f"Function {func_name} is not read-only, it is {abi_dict['stateMutability']}"
+                )
 
-        f = abi.Function(abi.FUNCTION(abi_dict))
+        f = contract.get_function_by_name(func_name)
         data = f.encode(params, to_hex=True)  # Tx clause data
         clause = {"to": to, "value": str(value), "data": data}
         tx_body = build_tx_body(
@@ -169,12 +244,12 @@ class Connect:
             gas=gas,
         )
 
-        e_response = self.emulate_tx(caller, tx_body)
-        failed = any_emulate_failed(e_response)
+        e_responses = self.emulate_tx(caller, tx_body)
+        failed = any_emulate_failed(e_responses)
         if failed:
-            return e_response
+            return e_responses
         else:
-            first_clause = e_response[0]
+            first_clause = e_responses[0]
             # decode the "return data" from the function call
             if first_clause["data"] and first_clause["data"] != "0x":
                 first_clause["decoded"] = f.decode(
@@ -201,12 +276,55 @@ class Connect:
         contract: Contract,
         func_name: str,
         params: List,
-        to,
-        value=0,
+        to: str,
+        value=0,  # Note: value is in Wei
         gas=0,
-    ):
-        """ Call a contract method (not emulate), will create change to blockchain """
-        pass
+    ) -> dict:
+        """
+        Call a contract method,
+        Similar to "call()" but will create state change to blockchain.
+        And will spend gas.
+        """
+        abi_dict = contract.get_abi(func_name)
+        if not abi_dict:
+            raise Exception(f"Function {func_name} not found on the contract")
+
+        if is_readonly(abi_dict):
+            raise Exception(
+                f"Function {func_name} is {abi_dict['stateMutability']}, use call() not commit()"
+            )
+
+        f = contract.get_function_by_name(func_name)
+        data = f.encode(params, to_hex=True)  # Tx clause data
+        clause = {"to": to, "value": str(value), "data": data}
+        tx_body = build_tx_body(
+            [clause],
+            self.get_chainTag(),
+            calc_blockRef(self.get_block("best")["id"]),
+            calc_nonce(),
+            gas=gas,
+        )
+
+        # We emulate it first.
+        e_responses = self.emulate_tx(wallet.getAddress(), tx_body)
+        if any_emulate_failed(e_responses):
+            raise Exception(f"Tx will revert: {e_responses}")
+
+        # Get gas estimation from remote
+        _vm_gases = read_vm_gases(e_responses)
+        _supposed_vm_gas = _vm_gases[0]
+        _tx_obj = calc_tx_unsigned(tx_body)
+        _intrincis_gas = _tx_obj.get_intrinsic_gas()
+        _supposed_safe_gas = calc_gas(_supposed_vm_gas, _intrincis_gas)
+        if gas and gas < _supposed_safe_gas:
+            raise Exception(f"gas {gas} < emulated gas {_supposed_safe_gas}")
+
+        # fill out the gas for user.
+        if not gas:
+            tx_body["gas"] = _supposed_safe_gas
+
+        encoded_raw = calc_tx_signed(wallet, tx_body, True)
+        return self.post_tx(encoded_raw)
 
     def deploy(self, wallet: Wallet, contract: Contract):
         """ Deploy a smart contract onto blockchain """

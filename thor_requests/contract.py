@@ -14,12 +14,16 @@ class Contract:
         return cls(meta_dict)
 
     def get_bytecode(self, key: str = "bytecode") -> bytes:
-        """ Get bytecode """
+        """ Get bytecode of this smart contract """
         return bytes.fromhex(self.contract_meta[key])
+
+    def get_abis(self) -> List[dict]:
+        """ Get ABIs of this contract as a list """
+        return self.contract_meta["abi"]
 
     def get_abi(self, func_name: str) -> Union[dict, None]:
         """ Get specific ABI by function/event name, or None if not found """
-        abis = self.contract_meta["abi"]
+        abis = self.get_abis()
         targets = [each for each in abis if each.get("name") == func_name]
         assert len(targets) <= 1  # Zero or at most, one found.
         if len(targets):
@@ -27,13 +31,20 @@ class Contract:
         else:
             return None
 
-    def get_abis(self) -> List[dict]:
-        """ Get ABIs of this contract as a list """
-        return self.contract_meta["abi"]
+    def get_function_by_name(self, func_name: str) -> Union[abi.Function, None]:
+        """ Get a function instance by its name """
+        abi_dict = self.get_abi(func_name)
+        if not abi_dict:
+            return None
 
-    def get_events(self) -> List[dict]:
+        f = abi.Function(abi_dict)
+        return f
+
+    def get_events(self) -> List[abi.Event]:
         """ Get events from the abi sections """
-        return [each for each in self.get_abis() if each.get("type") == "event"]
+        return [
+            abi.Event(each) for each in self.get_abis() if each.get("type") == "event"
+        ]
 
     def get_event_by_signature(self, signature: bytes) -> Union[abi.Event, None]:
         """
@@ -44,9 +55,8 @@ class Contract:
         signature : bytes
             32 bytes
         """
-        events = [abi.EVENT(each) for each in self.get_events()]
-        events_obj_list = [abi.Event(each) for each in events]
-        events_dict = {each.signature: each for each in events_obj_list}
+        events_obj_list = self.get_events()
+        events_dict = {each.get_signature(): each for each in events_obj_list}
         if signature in events_dict:
             return events_dict[signature]
         else:
