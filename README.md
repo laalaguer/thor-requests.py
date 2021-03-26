@@ -10,8 +10,10 @@ $ make install
 ```
 
 ## Examples
+
+**Debug a known transaction**
 ```bash
 # activate environment & run exmample
-$ source .env/bin/activat
+$ source .env/bin/activate
 $ python3 example-debug.py
 ```
