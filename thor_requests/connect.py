@@ -15,6 +15,7 @@ from .utils import (
     is_readonly,
     read_vm_gases,
     calc_gas,
+    build_params,
 )
 from .wallet import Wallet
 from .contract import Contract
@@ -338,7 +339,7 @@ class Connect:
         contract: Contract,
         params_types: list,  # Constructor params types
         params: list,  # Constructor params
-        value=0,  # send VET in Wei
+        value=0,  # send VET in Wei to constructor
     ):
         """
         Deploy a smart contract to blockchain
@@ -351,3 +352,19 @@ class Connect:
         contract : Contract
             Smart contract meta
         """
+        # Build the constructor call.
+        if not params_types:
+            data_bytes = contract.get_bytecode()
+        else:
+            data_bytes = contract.get_bytecode() + build_params(params_types, params)
+        data = "0x" + data_bytes.hex()
+
+        # Build the tx body.
+        clause = {"to": None, "value": str(value), "data": data}
+        tx_body = build_tx_body(
+            [clause],
+            self.get_chainTag(),
+            calc_blockRef(self.get_block("best")["id"]),
+            calc_nonce(),
+            gas=0,
+        )

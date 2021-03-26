@@ -13,6 +13,10 @@ class Contract:
         meta_dict = read_json_file(path_or_str)
         return cls(meta_dict)
 
+    def get_contract_name(self) -> Union[str, None]:
+        """ Get the smart contract name, or None """
+        return self.contract_meta.get("contractName")
+
     def get_bytecode(self, key: str = "bytecode") -> bytes:
         """ Get bytecode of this smart contract """
         return bytes.fromhex(self.contract_meta[key])
