@@ -1,4 +1,4 @@
-VeChain Thor for humans.
+VeChain for humans.
 ## Install
 
 **Coming soon once uploaded to pypi**
