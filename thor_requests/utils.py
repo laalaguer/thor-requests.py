@@ -197,3 +197,23 @@ def calc_revertReason(data: str) -> str:
         "string", bytes.fromhex(data.replace("0x08c379a0", ""))
     )
     return message
+
+
+def is_reverted(receipt: dict) -> bool:
+    """ Check receipt to see if tx is reverted """
+    return receipt["reverted"]
+
+
+def read_created_contracts(receipt: dict) -> list:
+    """ Read receipt and return a list of contract addresses created """
+    a = []
+    for x in receipt["outputs"]:
+        if x.get("contractAddress"):
+            a.append(x.get("contractAddress"))
+
+    return a
+
+
+def is_contract(account: dict) -> bool:
+    """ Check if the address online is a contract """
+    return account["hasCode"]
