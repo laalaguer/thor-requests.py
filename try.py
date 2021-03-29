@@ -12,20 +12,24 @@ c = Connect("http://testnet.veblocks.net")
 vvet_contract = Contract.fromFile("./VVET9.json")
 vvet_addr = "0x535b9a56c2f03a3658fc8787c44087574eb381fd"
 
-# Emulate call the "balanceOf()" function
-res = c.call(
-    w.getAddress(),
-    vvet_contract,
-    "balanceOf",
-    [w.getAddress()],
-    vvet_addr,
-)
-print(res)
+# <Emulate call> the "balanceOf()" function
+# res = c.call(
+#     w.getAddress(),
+#     vvet_contract,
+#     "balanceOf",
+#     [w.getAddress()],
+#     vvet_addr,
+# )
+# print(res)
 
-# Emulate call the "depost()" function.
+# <Emulate call> the "depost()" function.
 # res = c.call(w.getAddress(), vvet_contract, "deposit", [], vvet_addr, value=4)
 # print(res)
 
-# Real call the "deposit()" function. (will pay gas)
+# <Real call> the "deposit()" function. (will pay gas)
 # res = c.commit(w, vvet_contract, "deposit", [], vvet_addr, value=5 * (10 ** 18))
 # print(res)
+
+# <Deploy> the smart contract
+res = c.deploy(w, vvet_contract, None, None, 0)
+print(res)

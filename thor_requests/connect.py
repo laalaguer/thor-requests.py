@@ -19,7 +19,6 @@ from .utils import (
 )
 from .wallet import Wallet
 from .contract import Contract
-from thor_devkit import abi, cry, transaction
 
 
 class Connect:
@@ -69,7 +68,7 @@ class Connect:
         Returns
         -------
         dict
-            post response
+            post response eg. {'id': '0x....'}
 
         Raises
         ------
@@ -216,11 +215,13 @@ class Connect:
         strict_mode=False,
     ) -> dict:
         """
-        Call a contract method (read-only), this won't create change on blockchain.
-        Only emulation happens. Response type view README.md.
+        Call a contract method (read-only).
         This is a single transaction, single clause call.
+        This WON'T create ANY change on blockchain.
+        Only emulation happens.
 
-        If function has return value, it will be included in "decoded".
+        Response type view README.md
+        If function has any return value, it will be included in "decoded" field
         """
         abi_dict = contract.get_abi(func_name)
         if not abi_dict:
@@ -290,7 +291,24 @@ class Connect:
         Similar to "call()" but will create state change to blockchain.
         And will spend gas.
 
-        Return value see post_tx()
+        Parameters
+        ----------
+        wallet : Wallet
+            Function Caller wallet
+        contract : Contract
+            Smart contract meta
+        func_name : str
+            Function name
+        params: list
+            Function params. eg. ['0x123..efg', '100']
+        value:
+            VET in Wei to send with this call
+        gas:
+            Gas you willing to pay to power this contract call.
+
+        Returns
+        -------
+            Return value see post_tx()
         """
         abi_dict = contract.get_abi(func_name)
         if not abi_dict:
@@ -337,10 +355,10 @@ class Connect:
         self,
         wallet: Wallet,
         contract: Contract,
-        params_types: list,  # Constructor params types
-        params: list,  # Constructor params
-        value=0,  # send VET in Wei to constructor
-    ):
+        params_types: list = None,  # Constructor params types
+        params: list = None,  # Constructor params
+        value=0,  # send VET in Wei with constructor call
+    ) -> dict:
         """
         Deploy a smart contract to blockchain
         This would be a single transaction.
@@ -351,8 +369,18 @@ class Connect:
             Deployer wallet
         contract : Contract
             Smart contract meta
+        params_types : list
+            Constructor call parameter types. eg. ['address', 'uint256']
+        params: list
+            constructor call params. eg. ['0x123..efg', '100']
+        value:
+            VET in Wei to send with deploy call
+
+        Returns
+        -------
+            Return value see post_tx()
         """
-        # Build the constructor call.
+        # Build the constructor call data.
         if not params_types:
             data_bytes = contract.get_bytecode()
         else:
@@ -366,5 +394,23 @@ class Connect:
             self.get_chainTag(),
             calc_blockRef(self.get_block("best")["id"]),
             calc_nonce(),
-            gas=0,
+            gas=0,  # We will estimate the gas later
         )
+
+        # We emulate it first.
+        e_responses = self.emulate_tx(wallet.getAddress(), tx_body)
+        if any_emulate_failed(e_responses):
+            raise Exception(f"Tx will revert: {e_responses}")
+
+        # Get gas estimation from remote
+        _vm_gases = read_vm_gases(e_responses)
+        _supposed_vm_gas = _vm_gases[0]
+        _tx_obj = calc_tx_unsigned(tx_body)
+        _intrincis_gas = _tx_obj.get_intrinsic_gas()
+        _supposed_safe_gas = calc_gas(_supposed_vm_gas, _intrincis_gas)
+
+        # Fill out the gas for user.
+        tx_body["gas"] = _supposed_safe_gas
+
+        encoded_raw = calc_tx_signed(wallet, tx_body, True)
+        return self.post_tx(encoded_raw)
