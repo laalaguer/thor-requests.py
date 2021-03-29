@@ -31,5 +31,9 @@ vvet_addr = "0x535b9a56c2f03a3658fc8787c44087574eb381fd"
 # print(res)
 
 # <Deploy> the smart contract
-res = c.deploy(w, vvet_contract, None, None, 0)
-print(res)
+# res = c.deploy(w, vvet_contract, None, None, 0)
+# print(res)
+
+# Get name from smart contracts
+uniswap_v2_pair = Contract.fromFile("./UniswapV2Pair.json")
+print(uniswap_v2_pair.get_contract_name())
