@@ -33,11 +33,12 @@ contract = Contract.fromFile(meta_file_path='')
 
 # Connect
 connector = Connect(node_url='')
-connector.get_account(address='')
 connector.get_chainTag()
+connector.get_account(address='')
 connector.get_block(block_id='')
+connector.get_tx(tx_id='')
 connector.get_tx_receipt(tx_id='')
-connector.wait_for_tx_receipt(tx_id='')
+connector.wait_for_tx_receipt(tx_id='', time_out=20)
 connector.replay_tx(tx_id='')
 connector.call(caller, contract, method_name, method_params, to, value=0, gas=None)
 connector.commit(wallet, contract, method_name, method_params, to, value=0, gas=None)
@@ -212,15 +213,9 @@ _wallet = Wallet.fromPrivateKey(bytes.fromhex("dce1443bd2ef0c2631adc1c67e5c93f13
 _contract_addr = '0x535b9a56c2f03a3658fc8787c44087574eb381fd'
 _contract = Contract.fromFile("/path/to/solc/compiled/WETH9.json")
 
-# Truelly execute the "deposit()" function. (will pay gas)
-res = connector.commit(
-    wallet=_wallet,
-    contract=_contract,
-    "deposit",
-    [],
-    to=_contract_addr,
-    value=5 * (10 ** 18) # Send along 5 VET with the tx
-)
+# Execute the "deposit()" function. (will pay gas)
+ # Send along 5 VET with the tx
+res = connector.commit(_wallet, _contract, "deposit", [], to=_contract_addr, value=5 * (10 ** 18))
 print(res)
 
 # >>> {'id': '0x51222328b7395860cb9cc6d69d822cf31056851b5694eeccc9f243021eecd547'}

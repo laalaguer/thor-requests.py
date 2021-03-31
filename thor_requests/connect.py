@@ -95,7 +95,7 @@ class Connect:
 
         return r.json()
 
-    def wait_for_tx_receipt(self, tx_id: str, wait_for: int = 20) -> dict:
+    def wait_for_tx_receipt(self, tx_id: str, timeout: int = 20) -> dict:
         """
         Wait for tx receipt, for several seconds
 
@@ -103,7 +103,7 @@ class Connect:
         ----------
         tx_id : str
             tx id
-        wait_for : int, optional
+        timeout : int, optional
             seconds, by default 20
 
         Returns
@@ -112,7 +112,7 @@ class Connect:
             The receipt or None
         """
         interval = 3
-        rounds = wait_for // interval
+        rounds = timeout // interval
         receipt = None
         for _ in range(rounds):
             receipt = self.get_tx_receipt(tx_id)
