@@ -208,7 +208,7 @@ class Connect:
         caller: str,
         contract: Contract,
         func_name: str,
-        params: List,
+        func_params: List,
         to: str,
         value=0,
         gas=0,  # Note: value is in Wei
@@ -236,7 +236,7 @@ class Connect:
                 )
 
         f = contract.get_function_by_name(func_name)
-        data = f.encode(params, to_hex=True)  # Tx clause data
+        data = f.encode(func_params, to_hex=True)  # Tx clause data
         clause = {"to": to, "value": str(value), "data": data}
         tx_body = build_tx_body(
             [clause],
@@ -281,7 +281,7 @@ class Connect:
         wallet: Wallet,
         contract: Contract,
         func_name: str,
-        params: List,
+        func_params: List,
         to: str,
         value=0,  # Note: value is in Wei
         gas=0,
@@ -299,7 +299,7 @@ class Connect:
             Smart contract meta
         func_name : str
             Function name
-        params: list
+        func_params: list
             Function params. eg. ['0x123..efg', '100']
         value:
             VET in Wei to send with this call
@@ -320,7 +320,7 @@ class Connect:
             )
 
         f = contract.get_function_by_name(func_name)
-        data = f.encode(params, to_hex=True)  # Tx clause data
+        data = f.encode(func_params, to_hex=True)  # Tx clause data
         clause = {"to": to, "value": str(value), "data": data}
         tx_body = build_tx_body(
             [clause],
