@@ -14,7 +14,7 @@ from thor_requests.connect import Connect
 
 c = Connect("http://testnet.veblocks.net")
 
-# ... Now you can access info from VeChain
+# ... Now you can access VeChain
 ```
 
 ## Get Tx/Block/Account/Receipt
@@ -57,6 +57,8 @@ from thor_requests.connect import Connect
 c = Connect("http://testnet.veblocks.net")
 c.replay_tx("0x1d05a502db56ba46ccd258a5696b9b78cd83de6d0d67f22b297f37e710a72bb5")
 
+# Notice: Revert Reason is decoded for you.
+
 # [{
 #     'data': '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001c7472616e7366657220746f20746865207a65726f206164647265737300000000',
 #     'events': [],
@@ -72,9 +74,9 @@ c.replay_tx("0x1d05a502db56ba46ccd258a5696b9b78cd83de6d0d67f22b297f37e710a72bb5"
 
 ## Call a Contract Function (won't spend gas)
 
-This will only emulate the function call with remote blockchain.
+Emulate the function call with remote blockchain.
 
-**NO** gas is spent since it is only a read operation.
+**NO gas is spent.**
 
 ```python
 from thor_requests.connect import Connect
@@ -83,7 +85,7 @@ from thor_requests.contract import Contract
 c = Connect("http://testnet.veblocks.net")
 
 _contract_addr = '0x535b9a56c2f03a3658fc8787c44087574eb381fd'
-_contract = Contract.fromFile("/path/to/solc/compiled/vip180_token.json")
+_contract = Contract.fromFile("/path/to/solc/compiled/WETH9.json")
 
 # Emulate the "balanceOf()" function
 res = c.call(
@@ -94,6 +96,8 @@ res = c.call(
     to=_contract_addr,
 )
 print(res)
+
+# Notice: The return value is decoded for you.
 
 # {
 #     'data': '0x0000000000000000000000000000000000000000000000006124fee993bc0004',
@@ -117,6 +121,8 @@ res = c.call(
     value=4
 )
 print(res)
+
+# Notice the Event is decoded for you.
 
 # {
 #     'data': '0x',
@@ -142,10 +148,35 @@ print(res)
 #     'vmError': ''
 # }
 ```
+
 ## Execute a Contract Function (spend gas)
 
-This will commit a transaction to the blockchain and spend real gas.
+Commit a transaction to the blockchain and spend real gas.
 ```python
+from thor_requests.connect import Connect
+from thor_requests.wallet import Wallet
+from thor_requests.contract import Contract
+
+c = Connect("http://testnet.veblocks.net")
+
+_wallet = Wallet.fromPrivateKey(
+    bytes.fromhex("dce1443bd2ef0c2631adc1c67e5c93f13dc23a41c18b536effbbdcbcdb96fb65")
+) # wallet address: 0x7567d83b7b8d80addcb281a71d54fc7b3364ffed
+_contract_addr = '0x535b9a56c2f03a3658fc8787c44087574eb381fd'
+_contract = Contract.fromFile("/path/to/solc/compiled/WETH9.json")
+
+# Truelly execute the "deposit()" function. (will pay gas)
+res = c.commit(
+    wallet=_wallet,
+    contract=_contract,
+    "deposit",
+    [],
+    to=_contract_addr,
+    value=5 * (10 ** 18) # Send along 5 VET with the tx
+)
+print(res)
+
+# >>> {'id': '0x51222328b7395860cb9cc6d69d822cf31056851b5694eeccc9f243021eecd547'}
 ```
 
 ## Deploy a Smart Contract
@@ -153,4 +184,19 @@ This will commit a transaction to the blockchain and spend real gas.
 Deploys a smart contract onto the blockchain.
 
 ```python
+from thor_requests.connect import Connect
+from thor_requests.wallet import Wallet
+from thor_requests.contract import Contract
+
+c = Connect("http://testnet.veblocks.net")
+
+_wallet = Wallet.fromPrivateKey(
+    bytes.fromhex("dce1443bd2ef0c2631adc1c67e5c93f13dc23a41c18b536effbbdcbcdb96fb65")
+) # wallet address: 0x7567d83b7b8d80addcb281a71d54fc7b3364ffed
+
+_contract = Contract.fromFile("/path/to/solc/compiled/WETH9.json")
+
+res = c.deploy(_wallet, _contract, params_types=None, params=None, value=0)
+print(res)
+# >>> {'id': '0xa670ae6fc053f3e63e9a944947d1e2eb9f53dc613fd305552ee00af987a6d140'}
 ```

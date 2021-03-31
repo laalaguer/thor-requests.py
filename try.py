@@ -23,16 +23,16 @@ vvet_addr = "0x535b9a56c2f03a3658fc8787c44087574eb381fd"
 # print(res)
 
 # <Emulate call> the "depost()" function.
-res = c.call(w.getAddress(), vvet_contract, "deposit", [], vvet_addr, value=4)
-print(res)
+# res = c.call(w.getAddress(), vvet_contract, "deposit", [], vvet_addr, value=4)
+# print(res)
 
 # <Real call> the "deposit()" function. (will pay gas)
 # res = c.commit(w, vvet_contract, "deposit", [], vvet_addr, value=5 * (10 ** 18))
 # print(res)
 
 # <Deploy> the smart contract
-# res = c.deploy(w, vvet_contract, None, None, 0)
-# print(res)
+res = c.deploy(w, vvet_contract, None, None, 0)
+print(res)
 
 # Get name from smart contracts
 # uniswap_v2_pair = Contract.fromFile("./UniswapV2Pair.json")
