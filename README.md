@@ -108,8 +108,6 @@ connector.replay_tx("0x1d05a502db56ba46ccd258a5696b9b78cd83de6d0d67f22b297f37e71
 
 ## Deploy a Smart Contract
 
-Deploys a smart contract onto the blockchain.
-
 ```python
 from thor_requests.connect import Connect
 from thor_requests.wallet import Wallet
@@ -127,9 +125,7 @@ print(res)
 # >>> {'id': '0xa670ae6fc053f3e63e9a944947d1e2eb9f53dc613fd305552ee00af987a6d140'}
 ```
 
-## Call a Function (won't spend gas)
-
-Emulate the function call with remote blockchain.
+## Call a Function (won't spend gas, emulate only)
 
 ```python
 from thor_requests.connect import Connect
@@ -202,9 +198,8 @@ print(res)
 # }
 ```
 
-## Execute a Function (spend gas)
+## Execute a Function (spend real gas)
 
-Commit a transaction to the blockchain and spend real gas.
 ```python
 from thor_requests.connect import Connect
 from thor_requests.wallet import Wallet
