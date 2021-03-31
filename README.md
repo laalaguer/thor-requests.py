@@ -99,8 +99,6 @@ print(res)
 
 Emulate the function call with remote blockchain.
 
-**NO gas is spent.**
-
 ```python
 from thor_requests.connect import Connect
 from thor_requests.contract import Contract
