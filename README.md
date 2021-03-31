@@ -41,6 +41,9 @@ c.get_chainTag()
 # >>> 39
 ```
 ## Debug a Failed Transaction
+
+This operation will yield nice revert reason if any.
+
 ```python
 from thor_requests.connect import Connect
 
@@ -62,9 +65,9 @@ c.replay_tx("0x1d05a502db56ba46ccd258a5696b9b78cd83de6d0d67f22b297f37e710a72bb5"
 
 ## Call a Contract Function (won't spend gas)
 
-This "call" will only emulate the function call.
+This will only emulate the function call with remote blockchain.
 
-No real changes are made to the blockchain.
+No gas is spent since it is a read operation.
 
 ```python
 # Emulate call the "balanceOf()" function
@@ -78,11 +81,11 @@ _contract_addr = '0x535b9a56c2f03a3658fc8787c44087574eb381fd'
 _contract = Contract.fromFile("/path/to/solc/compiled/token.json")
 
 res = c.call(
-    caller='0x7567d83b7b8d80addcb281a71d54fc7b3364ffed',
-    _contract,
-    "balanceOf",
-    ['0x7567d83b7b8d80addcb281a71d54fc7b3364ffed'],
-    _contract_addr,
+    caller='',
+    contract=_contract,
+    func_name="balanceOf",
+    params=['0x7567d83b7b8d80addcb281a71d54fc7b3364ffed'],
+    to=_contract_addr,
 )
 print(res)
 
