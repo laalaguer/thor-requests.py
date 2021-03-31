@@ -47,18 +47,17 @@ from thor_requests.connect import Connect
 c = Connect("http://testnet.veblocks.net")
 c.replay_tx("0x1d05a502db56ba46ccd258a5696b9b78cd83de6d0d67f22b297f37e710a72bb5")
 
-# >>> 
-[{
-    'data': '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001c7472616e7366657220746f20746865207a65726f206164647265737300000000',
-    'events': [],
-    'transfers': [],
-    'gasUsed': 659,
-    'reverted': True,
-    'vmError': 'evm: execution reverted',
-    'decoded': {
-        'revertReason': 'transfer to the zero address'
-    }
-}]
+# [{
+#     'data': '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001c7472616e7366657220746f20746865207a65726f206164647265737300000000',
+#     'events': [],
+#     'transfers': [],
+#     'gasUsed': 659,
+#     'reverted': True,
+#     'vmError': 'evm: execution reverted',
+#     'decoded': {
+#         'revertReason': 'transfer to the zero address'
+#     }
+# }]
 ```
 
 ## Call a Contract Function (won't spend gas, just emulate)
