@@ -60,8 +60,52 @@ c.replay_tx("0x1d05a502db56ba46ccd258a5696b9b78cd83de6d0d67f22b297f37e710a72bb5"
 # }]
 ```
 
-## Call a Contract Function (won't spend gas, just emulate)
+## Call a Contract Function (won't spend gas)
 
+This "call" will only emulate the function call.
+
+No real changes are made to the blockchain.
+
+```python
+# Emulate call the "balanceOf()" function
+# on any ERC20/VIP180 contract.
+from thor_requests.connect import Connect
+from thor_requests.contract import Contract
+
+c = Connect("http://testnet.veblocks.net")
+
+_contract_addr = '0x535b9a56c2f03a3658fc8787c44087574eb381fd'
+_contract = Contract.fromFile("/path/to/solc/compiled/token.json")
+
+res = c.call(
+    caller='0x7567d83b7b8d80addcb281a71d54fc7b3364ffed',
+    _contract,
+    "balanceOf",
+    ['0x7567d83b7b8d80addcb281a71d54fc7b3364ffed'],
+    _contract_addr,
+)
+print(res)
+
+# {
+#     'data': '0x0000000000000000000000000000000000000000000000006124fee993bc0004',
+#     'events': [],
+#     'transfers': [],
+#     'gasUsed': 557,
+#     'reverted': False,
+#     'vmError': '',
+#     'decoded': {
+#         '0': 7000000000000000004
+#     }
+# }
+```
 ## Execute a Contract Function (spend gas)
 
+This will commit a transaction to the blockchain and spend real gas.
+
+
 ## Deploy a Smart Contract
+
+Deploys a smart contract onto the blockchain.
+
+```python
+```

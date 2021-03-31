@@ -13,14 +13,14 @@ vvet_contract = Contract.fromFile("./VVET9.json")
 vvet_addr = "0x535b9a56c2f03a3658fc8787c44087574eb381fd"
 
 # <Emulate call> the "balanceOf()" function
-# res = c.call(
-#     w.getAddress(),
-#     vvet_contract,
-#     "balanceOf",
-#     [w.getAddress()],
-#     vvet_addr,
-# )
-# print(res)
+res = c.call(
+    w.getAddress(),
+    vvet_contract,
+    "balanceOf",
+    [w.getAddress()],
+    vvet_addr,
+)
+print(res)
 
 # <Emulate call> the "depost()" function.
 # res = c.call(w.getAddress(), vvet_contract, "deposit", [], vvet_addr, value=4)
@@ -35,5 +35,5 @@ vvet_addr = "0x535b9a56c2f03a3658fc8787c44087574eb381fd"
 # print(res)
 
 # Get name from smart contracts
-uniswap_v2_pair = Contract.fromFile("./UniswapV2Pair.json")
-print(uniswap_v2_pair.get_contract_name())
+# uniswap_v2_pair = Contract.fromFile("./UniswapV2Pair.json")
+# print(uniswap_v2_pair.get_contract_name())
