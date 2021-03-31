@@ -8,9 +8,16 @@ This library enables you to talk to VeChain blockchain without hassle.
 pip3 install -U thor-requests
 ```
 
-# Tutorials
+# Quick Start
+```python
+from thor_requests.connect import Connect
 
-## Fetch Tx/Block/Account/Receipt
+c = Connect("http://testnet.veblocks.net")
+
+# ... Now you can access info from VeChain
+```
+
+## Get Tx/Block/Account/Receipt
 ```python
 from thor_requests.connect import Connect
 
@@ -67,19 +74,18 @@ c.replay_tx("0x1d05a502db56ba46ccd258a5696b9b78cd83de6d0d67f22b297f37e710a72bb5"
 
 This will only emulate the function call with remote blockchain.
 
-No gas is spent since it is a read operation.
+**NO** gas is spent since it is only a read operation.
 
 ```python
-# Emulate call the "balanceOf()" function
-# on any ERC20/VIP180 contract.
 from thor_requests.connect import Connect
 from thor_requests.contract import Contract
 
 c = Connect("http://testnet.veblocks.net")
 
 _contract_addr = '0x535b9a56c2f03a3658fc8787c44087574eb381fd'
-_contract = Contract.fromFile("/path/to/solc/compiled/token.json")
+_contract = Contract.fromFile("/path/to/solc/compiled/vip180_token.json")
 
+# Emulate the "balanceOf()" function
 res = c.call(
     caller='',
     contract=_contract,
@@ -100,11 +106,47 @@ print(res)
 #         '0': 7000000000000000004
 #     }
 # }
+
+# Emulate the "deposit()" function
+res = c.call(
+    caller='0x7567d83b7b8d80addcb281a71d54fc7b3364ffed',
+    contract=_contract,
+    "deposit",
+    params=[],
+    to=_contract_addr,
+    value=4
+)
+print(res)
+
+# {
+#     'data': '0x',
+#     'events': [{
+#         'address': '0x535b9a56c2f03a3658fc8787c44087574eb381fd',
+#         'topics': ['0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c', '0x0000000000000000000000007567d83b7b8d80addcb281a71d54fc7b3364ffed'],
+#         'data': '0x0000000000000000000000000000000000000000000000000000000000000004',
+#         'decoded': {
+#             '0': '0x7567d83b7b8d80addcb281a71d54fc7b3364ffed',
+#             'dst': '0x7567d83b7b8d80addcb281a71d54fc7b3364ffed',
+#             '1': 4,
+#             'wad': 4
+#         },
+#         'name': 'Deposit'
+#     }],
+#     'transfers': [{
+#         'sender': '0x7567d83b7b8d80addcb281a71d54fc7b3364ffed',
+#         'recipient': '0x535b9a56c2f03a3658fc8787c44087574eb381fd',
+#         'amount': '0x4'
+#     }],
+#     'gasUsed': 6902,
+#     'reverted': False,
+#     'vmError': ''
+# }
 ```
 ## Execute a Contract Function (spend gas)
 
 This will commit a transaction to the blockchain and spend real gas.
-
+```python
+```
 
 ## Deploy a Smart Contract
 
