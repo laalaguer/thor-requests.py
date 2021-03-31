@@ -42,9 +42,11 @@ connector.get_tx(tx_id='')
 connector.get_tx_receipt(tx_id='')
 connector.wait_for_tx_receipt(tx_id='', time_out=20)
 connector.replay_tx(tx_id='')
+
+# Connect + Contract + Wallet
+connector.deploy(wallet, contract)
 connector.call(caller, contract, method_name, method_params, to, value=0, gas=None)
 connector.commit(wallet, contract, method_name, method_params, to, value=0, gas=None)
-connector.deploy(wallet, contract, constructor_params_types, constructor_params)
 ```
 
 # Examples (Blockchain)
