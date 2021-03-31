@@ -2,6 +2,8 @@ VeChain for humans.
 
 This library enables you to talk to VeChain blockchain without hassle.
 
+It automatically estimate gas and decode Events/Revert reasons for you.
+
 ## Installation
 
 ```
