@@ -17,7 +17,8 @@ c = Connect("http://testnet.veblocks.net")
 # ... Now you can access VeChain
 ```
 
-## Get Tx/Block/Account/Receipt
+# Work with Blockchain
+### Get Tx/Block/Account/Receipt
 ```python
 from thor_requests.connect import Connect
 
@@ -47,7 +48,7 @@ c.get_tx_receipt('0xda2ce6bddfb3bd32541c999e81ef56019a6314a23c90a466896aeefca33a
 c.get_chainTag()
 # >>> 39
 ```
-## Debug a Failed Transaction
+### Debug a Failed Transaction
 
 This operation will yield nice revert reason if any.
 
@@ -71,8 +72,31 @@ c.replay_tx("0x1d05a502db56ba46ccd258a5696b9b78cd83de6d0d67f22b297f37e710a72bb5"
 #     }
 # }]
 ```
+# Work with Smart Contracts
 
-## Call a Contract Function (won't spend gas)
+### Deploy a Smart Contract
+
+Deploys a smart contract onto the blockchain.
+
+```python
+from thor_requests.connect import Connect
+from thor_requests.wallet import Wallet
+from thor_requests.contract import Contract
+
+c = Connect("http://testnet.veblocks.net")
+
+_wallet = Wallet.fromPrivateKey(
+    bytes.fromhex("dce1443bd2ef0c2631adc1c67e5c93f13dc23a41c18b536effbbdcbcdb96fb65")
+) # wallet address: 0x7567d83b7b8d80addcb281a71d54fc7b3364ffed
+
+_contract = Contract.fromFile("/path/to/solc/compiled/WETH9.json")
+
+res = c.deploy(_wallet, _contract)
+print(res)
+# >>> {'id': '0xa670ae6fc053f3e63e9a944947d1e2eb9f53dc613fd305552ee00af987a6d140'}
+```
+
+### Call a Function (won't spend gas)
 
 Emulate the function call with remote blockchain.
 
@@ -149,7 +173,7 @@ print(res)
 # }
 ```
 
-## Execute a Contract Function (spend gas)
+### Execute a Function (spend gas)
 
 Commit a transaction to the blockchain and spend real gas.
 ```python
@@ -177,26 +201,4 @@ res = c.commit(
 print(res)
 
 # >>> {'id': '0x51222328b7395860cb9cc6d69d822cf31056851b5694eeccc9f243021eecd547'}
-```
-
-## Deploy a Smart Contract
-
-Deploys a smart contract onto the blockchain.
-
-```python
-from thor_requests.connect import Connect
-from thor_requests.wallet import Wallet
-from thor_requests.contract import Contract
-
-c = Connect("http://testnet.veblocks.net")
-
-_wallet = Wallet.fromPrivateKey(
-    bytes.fromhex("dce1443bd2ef0c2631adc1c67e5c93f13dc23a41c18b536effbbdcbcdb96fb65")
-) # wallet address: 0x7567d83b7b8d80addcb281a71d54fc7b3364ffed
-
-_contract = Contract.fromFile("/path/to/solc/compiled/WETH9.json")
-
-res = c.deploy(_wallet, _contract, params_types=None, params=None, value=0)
-print(res)
-# >>> {'id': '0xa670ae6fc053f3e63e9a944947d1e2eb9f53dc613fd305552ee00af987a6d140'}
 ```
