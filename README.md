@@ -47,6 +47,8 @@ connector.replay_tx(tx_id='')
 connector.deploy(wallet, contract)
 connector.call(caller, contract, method_name, method_params, to, value=0, gas=None)
 connector.commit(wallet, contract, method_name, method_params, to, value=0, gas=None)
+
+# Multi Clause support
 ```
 
 # Examples (Blockchain)
