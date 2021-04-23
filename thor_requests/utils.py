@@ -206,12 +206,9 @@ def is_reverted(receipt: dict) -> bool:
 
 def read_created_contracts(receipt: dict) -> list:
     """ Read receipt and return a list of contract addresses created """
-    a = []
-    for x in receipt["outputs"]:
-        if x.get("contractAddress"):
-            a.append(x.get("contractAddress"))
-
-    return a
+    a = [x.get("contractAddress") for x in receipt["outputs"]]
+    b = [x for x in a if x != None]
+    return b
 
 
 def is_contract(account: dict) -> bool:

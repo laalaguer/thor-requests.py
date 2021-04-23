@@ -8,16 +8,27 @@ class TxBody:
         pass
 
     def set_blockRef(blockRef: str = None):
+        ''' Set blockRef to txbody '''
         pass
 
     def set_nonce(nonce: int = None):
+        ''' Set nonce to tx body '''
         pass
 
     def set_gas(gas: int = None):
+        ''' Set gas to tx body '''
         pass
 
     def add_clause(self, to, value, data):
+        ''' Add a clause to tx body '''
         pass
 
-    def format():
+    def format() -> dict:
+        '''
+        Output TxBody as dict.
+
+        Note:
+            If nonce is not set, will get a random
+            If gas is not set, will be 0
+        '''
         pass

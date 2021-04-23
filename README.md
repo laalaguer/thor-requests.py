@@ -43,12 +43,22 @@ connector.get_tx_receipt(tx_id='')
 connector.wait_for_tx_receipt(tx_id='', time_out=20)
 connector.replay_tx(tx_id='')
 
-# Connect + Contract + Wallet
+# Deploy
 connector.deploy(wallet, contract)
-connector.call(caller, contract, method_name, method_params, to, value=0, gas=None)
-connector.commit(wallet, contract, method_name, method_params, to, value=0, gas=None)
+
+# Quickly call a contract function (not spend gas)
+connector.call(caller, contract, func_name, func_params, to, value=0, gas=None)
+
+# Quickly call a contract fucntion (spend real gas)
+connector.commit(wallet, contract, func_name, func_params, to, value=0, gas=None)
 
 # Multi Clause support
+clause1 = connector.clause(contract, func_name, func_params, to, value=0)
+clause2 = connector.clause(contract, func_name, func_params, to, value=0)
+# Emulate it (won't spend gas)
+connector.call_multi(caller, clauses=[clause1, clause2])
+# Or execute it
+connector.commit_multi(wallet, clauses=[clause1, clause2])
 ```
 
 # Examples (Blockchain)
