@@ -4,8 +4,8 @@ from .connect import Connect
 class TxBody:
     """ Tx body """
 
-    def __init__(self, Connect):
-        pass
+    def __init__(self, connector: Connect):
+        self.c = connector
 
     def set_blockRef(blockRef: str = None):
         ''' Set blockRef to txbody '''

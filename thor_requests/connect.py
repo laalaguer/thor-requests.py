@@ -203,6 +203,32 @@ class Connect:
         emulate_body = calc_emulate_tx_body(address, tx_body)
         return self.emulate(emulate_body, block)
 
+    def clause(self, contract: Contract, func_name: str, func_params: List, to: str, value=0) -> dict:
+        '''
+        Build a clause according to the function name and params.
+
+        Parameters
+        ----------
+        contract : Contract
+            On which contract the function is sitting.
+        func_name : str
+            Name of the function.
+        func_params : List
+            Function params supplied by users.
+        to : str
+            Address of the contract.
+        value : int, optional
+            VET sent with the clause in Wei, by default 0
+        '''
+        abi_dict = contract.get_abi(func_name)
+        if not abi_dict:
+            raise Exception(f"Function {func_name} not found on the contract")
+        
+        f = contract.get_function_by_name(func_name)
+        data = f.encode(func_params, to_hex=True)  # Tx clause data
+        a_clause = {"to": to, "value": str(value), "data": data}
+        return a_clause
+
     def call(
         self,
         caller: str,
@@ -212,7 +238,6 @@ class Connect:
         to: str,
         value=0,
         gas=0,  # Note: value is in Wei
-        strict_mode=False,
     ) -> dict:
         """
         Call a contract method (read-only).
@@ -226,14 +251,6 @@ class Connect:
         abi_dict = contract.get_abi(func_name)
         if not abi_dict:
             raise Exception(f"Function {func_name} not found on the contract")
-
-        # In strict mode you can only call "read-only" functions.
-        # Non-strict mode you can emulate "state changing" functions.
-        if strict_mode:
-            if not is_readonly(abi_dict):
-                raise Exception(
-                    f"Function {func_name} is not read-only, it is {abi_dict['stateMutability']}"
-                )
 
         f = contract.get_function_by_name(func_name)
         data = f.encode(func_params, to_hex=True)  # Tx clause data
@@ -274,7 +291,7 @@ class Connect:
                                 [bytes.fromhex(x[2:]) for x in each_event["topics"]],
                             )
                             each_event["name"] = e_obj.get_name()
-            return first_clause
+            return first_clause 
 
     def commit(
         self,

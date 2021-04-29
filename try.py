@@ -10,18 +10,18 @@ c = Connect("http://testnet.veblocks.net")
 # print(c.replay_tx("0x1d05a502db56ba46ccd258a5696b9b78cd83de6d0d67f22b297f37e710a72bb5"))
 
 # print(c.replay_tx("0x913011bcc1b351436e5296c821fff066c5296f9f95646345eda92fdeade4e8f6"))
-# vvet_contract = Contract.fromFile("./VVET9.json")
-# vvet_addr = "0x535b9a56c2f03a3658fc8787c44087574eb381fd"
+vvet_contract = Contract.fromFile("./VVET9.json")
+vvet_addr = "0x535b9a56c2f03a3658fc8787c44087574eb381fd"
 
-# # <Emulate call> the "balanceOf()" function
-# res = c.call(
-#     w.getAddress(),
-#     vvet_contract,
-#     "balanceOf",
-#     [w.getAddress()],
-#     vvet_addr,
-# )
-# print(res)
+# <Emulate call> the "balanceOf()" function
+res = c.call(
+    w.getAddress(),
+    vvet_contract,
+    "balanceOf",
+    [w.getAddress()],
+    vvet_addr,
+)
+print(res)
 
 # # <Emulate call> the "depost()" function.
 # res = c.call(w.getAddress(), vvet_contract, "deposit", [], vvet_addr, value=4)
