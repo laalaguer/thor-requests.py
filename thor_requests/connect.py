@@ -22,13 +22,13 @@ from .contract import Contract
 
 
 class Connect:
-    """ Connect to VeChain """
+    """Connect to VeChain"""
 
     def __init__(self, url):
         self.url = url
 
     def get_account(self, address: str, block: str = "best") -> dict:
-        """ Query account status against the "best" block (or your choice)"""
+        """Query account status against the "best" block (or your choice)"""
         url = build_url(self.url, f"/accounts/{address}?revision={block}")
         r = requests.get(url, headers={"accept": "application/json"})
         if not (r.status_code == 200):
@@ -36,7 +36,7 @@ class Connect:
         return r.json()
 
     def get_block(self, id_or_number: str = "best") -> dict:
-        """ Get a block by id or number, default get "best" block """
+        """Get a block by id or number, default get "best" block"""
         url = build_url(self.url, f"blocks/{id_or_number}")
         r = requests.get(url, headers={"accept": "application/json"})
         if not (r.status_code == 200):
@@ -44,12 +44,12 @@ class Connect:
         return r.json()
 
     def get_chainTag(self) -> int:
-        """ Fetch ChainTag from the remote network """
+        """Fetch ChainTag from the remote network"""
         b = self.get_block(0)
         return calc_chaintag(b["id"][-2:])
 
     def get_tx(self, tx_id: str) -> Union[dict, None]:
-        """ Fetch a transaction, if not found then None """
+        """Fetch a transaction, if not found then None"""
         url = build_url(self.url, f"/transactions/{tx_id}")
         r = requests.get(url, headers={"accept": "application/json"})
         if not (r.status_code == 200):
@@ -87,7 +87,7 @@ class Connect:
         return r.json()
 
     def get_tx_receipt(self, tx_id: str) -> Union[dict, None]:
-        """ Fetch tx receipt as a dict, or None """
+        """Fetch tx receipt as a dict, or None"""
         url = build_url(self.url, f"transactions/{tx_id}/receipt")
         r = requests.get(url, headers={"accept": "application/json"})
         if not (r.status_code == 200):
@@ -124,7 +124,7 @@ class Connect:
 
     def emulate(self, emulate_tx_body: dict, block: str = "best") -> List[dict]:
         """
-        Helper function. Use with caution.
+        Helper function.
         Upload a tx body for emulation,
         Get a list of execution responses (as the tx has multiple clauses).
         The response json structure please view README.md
@@ -156,7 +156,8 @@ class Connect:
             raise Exception(f"HTTP error: {r.status_code} {r.text}")
 
         all_responses = r.json()
-        # decode the "revert" reason if emulation failed
+        # Decode the "revert" reason if emulation failed
+        # Create a "revertReason" in the body with plain text reason
         for response in all_responses:
             if response["reverted"] == True and response["data"] != "0x":
                 response["decoded"] = {
@@ -177,7 +178,7 @@ class Connect:
         Returns
         -------
         List[dict]
-            A list of clause execution results. (within the tx)
+            See emulate()
 
         Raises
         ------
@@ -198,13 +199,34 @@ class Connect:
 
     def emulate_tx(self, address: str, tx_body: dict, block: str = "best"):
         """
-        Use the emulate function to emulate execution of a transaction.
+        Emulate the execution of a transaction.
+
+        Parameters
+        ----------
+        address : str
+            '0x...' address of caller.
+        tx_body : dict
+            Tx body to be emulated
+        block : str, optional
+            Target at which block? by default "best"
+
+        Returns
+        -------
+        List[dict]
+            See emulate()
         """
         emulate_body = calc_emulate_tx_body(address, tx_body)
         return self.emulate(emulate_body, block)
 
-    def clause(self, contract: Contract, func_name: str, func_params: List, to: str, value=0) -> dict:
-        '''
+    def clause(
+        self,
+        contract: Contract,
+        func_name: str,
+        func_params: List,
+        to: str,
+        value=0,
+    ) -> dict:
+        """
         Build a clause according to the function name and params.
 
         Parameters
@@ -219,11 +241,11 @@ class Connect:
             Address of the contract.
         value : int, optional
             VET sent with the clause in Wei, by default 0
-        '''
+        """
         abi_dict = contract.get_abi(func_name)
         if not abi_dict:
             raise Exception(f"Function {func_name} not found on the contract")
-        
+
         f = contract.get_function_by_name(func_name)
         data = f.encode(func_params, to_hex=True)  # Tx clause data
         a_clause = {"to": to, "value": str(value), "data": data}
@@ -263,11 +285,9 @@ class Connect:
             gas=gas,
         )
 
+        # Emulate the Tx first
         e_responses = self.emulate_tx(caller, tx_body)
-        if len(e_responses) > 1:
-            raise Exception(
-                f"Emulation should contain 1 clause but has {len(e_responses)}"
-            )
+        assert len(e_responses) == 1
         failed = any_emulate_failed(e_responses)
         if failed:
             return e_responses[0]
@@ -291,7 +311,7 @@ class Connect:
                                 [bytes.fromhex(x[2:]) for x in each_event["topics"]],
                             )
                             each_event["name"] = e_obj.get_name()
-            return first_clause 
+            return first_clause
 
     def commit(
         self,
