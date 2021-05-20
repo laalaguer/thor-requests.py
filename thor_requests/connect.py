@@ -95,7 +95,7 @@ class Connect:
 
         return r.json()
 
-    def wait_for_tx_receipt(self, tx_id: str, timeout: int = 20) -> dict:
+    def wait_for_tx_receipt(self, tx_id: str, timeout: int = 20) -> Union[dict, None]:
         """
         Wait for tx receipt, for several seconds
 
@@ -326,7 +326,8 @@ class Connect:
         """
         Call a contract method,
         Similar to "call()" but will create state change to blockchain.
-        And will spend gas.
+        And will spend real gas.
+        This would be a single clause transaction.
 
         Parameters
         ----------
@@ -398,7 +399,7 @@ class Connect:
     ) -> dict:
         """
         Deploy a smart contract to blockchain
-        This would be a single transaction.
+        This would be a single clause transaction.
 
         Parameters
         ----------
