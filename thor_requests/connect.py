@@ -12,7 +12,6 @@ from .utils import (
     calc_revertReason,
     calc_tx_signed,
     calc_tx_unsigned,
-    is_readonly,
     read_vm_gases,
     calc_gas,
     build_params,
@@ -228,6 +227,7 @@ class Connect:
     ) -> dict:
         """
         Build a clause according to the function name and params.
+        raise Exception when function is not found by name.
 
         Parameters
         ----------
@@ -241,12 +241,13 @@ class Connect:
             Address of the contract.
         value : int, optional
             VET sent with the clause in Wei, by default 0
-        """
-        abi_dict = contract.get_abi(func_name)
-        if not abi_dict:
-            raise Exception(f"Function {func_name} not found on the contract")
 
-        f = contract.get_function_by_name(func_name)
+        Returns
+        -------
+        dict
+            The clause as a dict: {"to":, "value":, "data":}
+        """
+        f = contract.get_function_by_name(func_name, strict_mode=True)
         data = f.encode(func_params, to_hex=True)  # Tx clause data
         a_clause = {"to": to, "value": str(value), "data": data}
         return a_clause
@@ -270,13 +271,9 @@ class Connect:
         Response type view README.md
         If function has any return value, it will be included in "decoded" field
         """
-        abi_dict = contract.get_abi(func_name)
-        if not abi_dict:
-            raise Exception(f"Function {func_name} not found on the contract")
-
-        f = contract.get_function_by_name(func_name)
-        data = f.encode(func_params, to_hex=True)  # Tx clause data
-        clause = {"to": to, "value": str(value), "data": data}
+        # Get the clause object
+        clause = self.clause(contract, func_name, func_params, to, value)
+        # Build tx body
         tx_body = build_tx_body(
             [clause],
             self.get_chainTag(),
@@ -295,7 +292,8 @@ class Connect:
             first_clause = e_responses[0]
             # decode the "return data" from the function call
             if first_clause["data"] and first_clause["data"] != "0x":
-                first_clause["decoded"] = f.decode(
+                f_obj = contract.get_function_by_name(func_name, strict_mode=True)
+                first_clause["decoded"] = f_obj.decode(
                     bytes.fromhex(first_clause["data"][2:])  # Remove '0x'
                 )
             # decode the "event" from the function call
@@ -348,18 +346,7 @@ class Connect:
         -------
             Return value see post_tx()
         """
-        abi_dict = contract.get_abi(func_name)
-        if not abi_dict:
-            raise Exception(f"Function {func_name} not found on the contract")
-
-        if is_readonly(abi_dict):
-            raise Exception(
-                f"Function {func_name} is {abi_dict['stateMutability']}, use call() not commit()"
-            )
-
-        f = contract.get_function_by_name(func_name)
-        data = f.encode(func_params, to_hex=True)  # Tx clause data
-        clause = {"to": to, "value": str(value), "data": data}
+        clause = self.clause(contract, func_name, func_params, to, value)
         tx_body = build_tx_body(
             [clause],
             self.get_chainTag(),
@@ -368,12 +355,13 @@ class Connect:
             gas=gas,
         )
 
-        # We emulate it first.
+        # Emulate the tx first.
         e_responses = self.emulate_tx(wallet.getAddress(), tx_body)
         if any_emulate_failed(e_responses):
             raise Exception(f"Tx will revert: {e_responses}")
 
-        # Get gas estimation from remote
+        # Get gas estimation from remote node
+        # Calculate a safe gas for user
         _vm_gases = read_vm_gases(e_responses)
         _supposed_vm_gas = _vm_gases[0]
         _tx_obj = calc_tx_unsigned(tx_body)
@@ -382,10 +370,11 @@ class Connect:
         if gas and gas < _supposed_safe_gas:
             raise Exception(f"gas {gas} < emulated gas {_supposed_safe_gas}")
 
-        # Fill out the gas for user.
+        # Fill out the gas for user
         if not gas:
             tx_body["gas"] = _supposed_safe_gas
 
+        # Post it to the remote node
         encoded_raw = calc_tx_signed(wallet, tx_body, True)
         return self.post_tx(encoded_raw)
 
@@ -399,7 +388,7 @@ class Connect:
     ) -> dict:
         """
         Deploy a smart contract to blockchain
-        This would be a single clause transaction.
+        This is a single clause transaction.
 
         Parameters
         ----------

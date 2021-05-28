@@ -14,19 +14,19 @@ class Contract:
         return cls(meta_dict)
 
     def get_contract_name(self) -> Union[str, None]:
-        """ Get the smart contract name, or None """
+        """Get the smart contract name, or None"""
         return self.contract_meta.get("contractName")
 
     def get_bytecode(self, key: str = "bytecode") -> bytes:
-        """ Get bytecode of this smart contract """
+        """Get bytecode of this smart contract"""
         return bytes.fromhex(self.contract_meta[key])
 
     def get_abis(self) -> List[dict]:
-        """ Get ABIs of this contract as a list """
+        """Get ABIs of this contract as a list of dicts"""
         return self.contract_meta["abi"]
 
     def get_abi(self, func_name: str) -> Union[dict, None]:
-        """ Get specific ABI by function/event name, or None if not found """
+        """Get specific ABI in dict form by function/event name, or None if not found"""
         abis = self.get_abis()
         targets = [each for each in abis if each.get("name") == func_name]
         assert len(targets) <= 1  # Zero or at most, one found.
@@ -35,9 +35,18 @@ class Contract:
         else:
             return None
 
-    def get_function_by_name(self, func_name: str) -> Union[abi.Function, None]:
-        """ Get a function instance by its name """
+    def get_function_by_name(
+        self, func_name: str, strict_mode=False
+    ) -> Union[abi.Function, None]:
+        """
+        Get a function instance by its name, or None if not found
+
+        In strict mode, it willl raise if function not found.
+        """
         abi_dict = self.get_abi(func_name)
+        if not abi_dict and strict_mode:
+            raise Exception(f"Function {func_name} not found on the contract")
+
         if not abi_dict:
             return None
 
@@ -45,7 +54,7 @@ class Contract:
         return f
 
     def get_events(self) -> List[abi.Event]:
-        """ Get events from the abi sections """
+        """Get events from the abi sections"""
         return [
             abi.Event(each) for each in self.get_abis() if each.get("type") == "event"
         ]

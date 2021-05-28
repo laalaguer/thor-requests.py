@@ -2,7 +2,7 @@ VeChain for humans.
 
 This library enables you to talk to VeChain blockchain without hassle.
 
-It automatically estimate gas and decode Events/Revert reasons for you.
+It automatically estimate gas and decode events/revert reasons for you.
 
 ## Installation
 
@@ -43,21 +43,22 @@ connector.get_tx_receipt(tx_id='')
 connector.wait_for_tx_receipt(tx_id='', time_out=20)
 connector.replay_tx(tx_id='')
 
-# Deploy
+# Deploy a smart contract
 connector.deploy(wallet, contract)
 
-# Quickly call a contract function (not spend gas)
+# Call a contract function (won't spend gas)
 connector.call(caller, contract, func_name, func_params, to, value=0, gas=None)
 
-# Quickly call a contract fucntion (spend real gas)
+# Execute a contract fucntion (spend real gas)
 connector.commit(wallet, contract, func_name, func_params, to, value=0, gas=None)
 
-# Multi Clause support
+# Multi clauses support (MTT)
 clause1 = connector.clause(contract, func_name, func_params, to, value=0)
 clause2 = connector.clause(contract, func_name, func_params, to, value=0)
-# Emulate it (won't spend gas)
+
+# Call them (won't spend gas)
 connector.call_multi(caller, clauses=[clause1, clause2])
-# Or execute it
+# Or execute them
 connector.commit_multi(wallet, clauses=[clause1, clause2])
 ```
 
@@ -94,7 +95,7 @@ connector.get_chainTag()
 ```
 ## Debug a Failed Transaction
 
-This operation will yield nice revert reason if any.
+This operation will yield pretty revert reason if any.
 
 ```python
 from thor_requests.connect import Connect
@@ -225,7 +226,7 @@ _contract_addr = '0x535b9a56c2f03a3658fc8787c44087574eb381fd'
 _contract = Contract.fromFile("/path/to/solc/compiled/WETH9.json")
 
 # Execute the "deposit()" function. (will pay gas)
- # Send along 5 VET with the tx
+# Send along 5 VET with the tx
 res = connector.commit(_wallet, _contract, "deposit", [], to=_contract_addr, value=5 * (10 ** 18))
 print(res)
 
