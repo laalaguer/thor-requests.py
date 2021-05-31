@@ -2,6 +2,7 @@
 from typing import Union, List
 from .utils import read_json_file
 from thor_devkit import abi
+import json
 
 
 class Contract:
@@ -15,7 +16,20 @@ class Contract:
 
     def get_contract_name(self) -> Union[str, None]:
         """Get the smart contract name, or None"""
-        return self.contract_meta.get("contractName")
+        # Old style compiled json
+        if self.contract_meta.get("contractName"):
+            return self.contract_meta.get("contractName")
+
+        # New style compiled json
+        if self.contract_meta.get("metadata"):
+            m = json.loads(self.contract_meta["metadata"])
+            if m.get("settings") and m["settings"].get("compilationTarget"):
+                keys = m["settings"]["compilationTarget"].keys()
+                key = list(keys)[0]
+                return m["settings"]["compilationTarget"][key]
+
+        # Nothing then return None!
+        return None
 
     def get_bytecode(self, key: str = "bytecode") -> bytes:
         """Get bytecode of this smart contract"""

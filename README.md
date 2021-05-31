@@ -232,3 +232,11 @@ print(res)
 
 # >>> {'id': '0x51222328b7395860cb9cc6d69d822cf31056851b5694eeccc9f243021eecd547'}
 ```
+
+## Local Development
+```
+... run a local thor node at 127.0.0.1:8669
+... then test the whole suite:
+
+$ make test
+```
