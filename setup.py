@@ -7,7 +7,7 @@ assert long_description
 
 setuptools.setup(
     name="thor-requests",
-    version="0.1.3",
+    version="0.1.4",
     author="laalaguer",
     author_email="laalaguer@gmail.com",
     description="VeChain for humans",

@@ -28,7 +28,7 @@ print(res)
 # print(res)
 
 # # <Real call> the "deposit()" function. (will pay gas)
-# res = c.commit(w, vvet_contract, "deposit", [], vvet_addr, value=5 * (10 ** 18))
+# res = c.transact(w, vvet_contract, "deposit", [], vvet_addr, value=5 * (10 ** 18))
 # print(res)
 
 # # <Deploy> the smart contract

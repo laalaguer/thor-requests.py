@@ -1,5 +1,5 @@
 # These test are integration tests.
-# Covers a point-to-point workflow.
+# Test the workflow of deploy, emulate call and transact call.
 
 import pytest
 
@@ -22,8 +22,8 @@ def deploy_vvet(solo_connector, solo_wallet, vvet_contract):
     return created_contracts[0]
 
 
-def test_emulate_call(deploy_vvet, solo_connector, solo_wallet, vvet_contract):
-    """Emulate a 'balanceOf()' function"""
+def test_call(deploy_vvet, solo_connector, solo_wallet, vvet_contract):
+    """Emulate call 'balanceOf()' function"""
     vvet_contract_addr = deploy_vvet
     res = solo_connector.call(
         solo_wallet.getAddress(),
@@ -35,8 +35,8 @@ def test_emulate_call(deploy_vvet, solo_connector, solo_wallet, vvet_contract):
     assert res["decoded"]["0"] == 0  # balanceOf() newly created contract shall be zero
 
 
-def test_real_call(deploy_vvet, solo_connector, solo_wallet, vvet_contract):
-    """Really call teh 'balanceOf()' function"""
+def test_transact(deploy_vvet, solo_connector, solo_wallet, vvet_contract):
+    """Real call of the 'balanceOf()' function using transact()"""
     vvet_contract_addr = deploy_vvet
     # Try to emulate the deposite() first,
     # Which will return the events along with the call.
@@ -54,7 +54,7 @@ def test_real_call(deploy_vvet, solo_connector, solo_wallet, vvet_contract):
     balance_1 = int(solo_connector.get_account(solo_wallet.getAddress())["balance"], 16)
 
     # Then we do the real call of deposit()
-    res = solo_connector.commit(
+    res = solo_connector.transact(
         solo_wallet,
         vvet_contract,
         "deposit",

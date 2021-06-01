@@ -311,7 +311,7 @@ class Connect:
                             each_event["name"] = e_obj.get_name()
             return first_clause
 
-    def commit(
+    def transact(
         self,
         wallet: Wallet,
         contract: Contract,

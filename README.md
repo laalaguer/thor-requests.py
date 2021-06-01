@@ -50,7 +50,7 @@ connector.deploy(wallet, contract)
 connector.call(caller, contract, func_name, func_params, to, value=0, gas=None)
 
 # Execute a contract fucntion (spend real gas)
-connector.commit(wallet, contract, func_name, func_params, to, value=0, gas=None)
+connector.transact(wallet, contract, func_name, func_params, to, value=0, gas=None)
 
 # Multi clauses support (MTT)
 clause1 = connector.clause(contract, func_name, func_params, to, value=0)
@@ -59,7 +59,7 @@ clause2 = connector.clause(contract, func_name, func_params, to, value=0)
 # Call them (won't spend gas)
 connector.call_multi(caller, clauses=[clause1, clause2])
 # Or execute them
-connector.commit_multi(wallet, clauses=[clause1, clause2])
+connector.transact_multi(wallet, clauses=[clause1, clause2])
 ```
 
 # Examples (Blockchain)
@@ -227,7 +227,7 @@ _contract = Contract.fromFile("/path/to/solc/compiled/WETH9.json")
 
 # Execute the "deposit()" function. (will pay gas)
 # Send along 5 VET with the tx
-res = connector.commit(_wallet, _contract, "deposit", [], to=_contract_addr, value=5 * (10 ** 18))
+res = connector.transact(_wallet, _contract, "deposit", [], to=_contract_addr, value=5 * (10 ** 18))
 print(res)
 
 # >>> {'id': '0x51222328b7395860cb9cc6d69d822cf31056851b5694eeccc9f243021eecd547'}
