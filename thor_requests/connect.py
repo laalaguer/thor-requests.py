@@ -311,6 +311,25 @@ class Connect:
                             each_event["name"] = e_obj.get_name()
             return first_clause
 
+    def call_multi(self, caller: str, clauses: List, gas: int = 0) -> dict:
+        """
+        Call a contract method (read-only).
+        This is a single transaction, multi-clause call.
+        This WON'T create ANY change on blockchain.
+        Only emulation happens.
+
+        Response type view README.md
+        If the called functions has any return value, it will be included in "decoded" field
+        """
+        # Build tx body
+        tx_body = build_tx_body(
+            [clauses],
+            self.get_chainTag(),
+            calc_blockRef(self.get_block("best")["id"]),
+            calc_nonce(),
+            gas=gas,
+        )
+
     def transact(
         self,
         wallet: Wallet,
@@ -377,6 +396,9 @@ class Connect:
         # Post it to the remote node
         encoded_raw = calc_tx_signed(wallet, tx_body, True)
         return self.post_tx(encoded_raw)
+
+    def transact_multi():
+        pass
 
     def deploy(
         self,

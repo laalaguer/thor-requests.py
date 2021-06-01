@@ -5,6 +5,11 @@ from thor_requests.contract import Contract
 
 
 @pytest.fixture
+def vtho_contract_address():
+    return "0x0000000000000000000000000000456e65726779"
+
+
+@pytest.fixture
 def solo_connector():
     return Connect("http://localhost:8669")
 
@@ -44,5 +49,15 @@ def testnet_wallet():
 
 
 @pytest.fixture
+def clean_wallet():
+    return Wallet.newWallet()
+
+
+@pytest.fixture
 def vvet_contract():
     return Contract.fromFile("tests/VVET9.json")
+
+
+@pytest.fixture
+def vtho_contract():
+    return Contract.fromFile("tests/VTHO.json")
