@@ -28,6 +28,7 @@ from thor_requests import Connect, Wallet, Contract
 wallet = Wallet.fromPrivate(priv=b'')
 wallet = Wallet.fromMnemonic(words=[])
 wallet = Wallet.fromKeyStore(ks=dict, password='')
+wallet = Wallet.newWallet() # Create a random wallet
 
 # Contract
 contract = Contract(meta_dict=dict)
