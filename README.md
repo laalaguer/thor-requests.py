@@ -6,6 +6,8 @@ It automatically estimate gas and decode events/revert reasons for you.
 
 ## Installation
 
+Pypi package: https://pypi.org/project/thor-requests/
+
 ```
 pip3 install -U thor-requests
 ```
