@@ -34,6 +34,44 @@ class Connect:
             raise Exception(f"Cant connect to {url}, error {r.text}")
         return r.json()
 
+    def get_vet_balance(self, address: str, block: str = "best") -> int:
+        """
+        Query the vet balance of an account
+
+        Parameters
+        ----------
+        address : str
+            The address of the account
+        block : str, optional
+            The block ID or number, by default "best"
+
+        Returns
+        -------
+        int
+            The balance of the VET in Wei
+        """
+        account_status = self.get_account(address)
+        return int(account_status["balance"], 16)
+
+    def get_vtho_balance(self, address: str, block: str = "best") -> int:
+        """
+        Query the vtho balance of an account
+
+        Parameters
+        ----------
+        address : str
+            The address of the account
+        block : str, optional
+            The block ID or number, by default "best"
+
+        Returns
+        -------
+        int
+            The balance of the VTHO in Wei
+        """
+        account_status = self.get_account(address)
+        return int(account_status["energy"], 16)
+
     def get_block(self, id_or_number: str = "best") -> dict:
         """Get a block by id or number, default get "best" block"""
         url = build_url(self.url, f"blocks/{id_or_number}")
@@ -226,8 +264,13 @@ class Connect:
         value=0,
     ) -> dict:
         """
+        There are two types of calls:
+        1) Function call on a smart contract
         Build a clause according to the function name and params.
         raise Exception when function is not found by name.
+
+        2) Pure transfer of VET
+        Set the contract, func_name, and func_params to None
 
         Parameters
         ----------
@@ -247,10 +290,12 @@ class Connect:
         dict
             The clause as a dict: {"to":, "value":, "data":}
         """
-        f = contract.get_function_by_name(func_name, strict_mode=True)
-        data = f.encode(func_params, to_hex=True)  # Tx clause data
-        a_clause = {"to": to, "value": str(value), "data": data}
-        return a_clause
+        if contract and func_name:  # Contract call
+            f = contract.get_function_by_name(func_name, strict_mode=True)
+            data = f.encode(func_params, to_hex=True)  # Tx clause data
+            return {"to": to, "value": str(value), "data": data}
+        else:  # VET transfer
+            return {"to": to, "value": str(value), "data": "0x"}
 
     def call(
         self,
@@ -284,6 +329,7 @@ class Connect:
 
         # Emulate the Tx first
         e_responses = self.emulate_tx(caller, tx_body)
+        # Should only have one response, since we only have 1 clause
         assert len(e_responses) == 1
         failed = any_emulate_failed(e_responses)
         if failed:
@@ -463,3 +509,21 @@ class Connect:
 
         encoded_raw = calc_tx_signed(wallet, tx_body, True)
         return self.post_tx(encoded_raw)
+
+    def transfer_vet(self, wallet: Wallet, to: str, value: int = 0) -> dict:
+        """
+        Do a pure VET transfer
+
+        Parameters
+        ----------
+        to : str
+            Address of the receiver
+        value : int, optional
+            Amount of VET to transfer in Wei, by default 0
+
+        Returns
+        -------
+        dict
+            See post_tx()
+        """
+        return self.transact(wallet, None, None, None, to, value)
