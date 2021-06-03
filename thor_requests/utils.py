@@ -18,23 +18,23 @@ from .wallet import Wallet
 
 
 def build_url(base: str, tail: str) -> str:
-    """ Build a proper URL, base + tail """
+    """Build a proper URL, base + tail"""
     return base.rstrip("/") + "/" + tail.lstrip("/")
 
 
 def read_json_file(path_like: str) -> dict:
-    """ Read json file """
+    """Read json file"""
     with open(path_like, "r") as f:
         return json.load(f)
 
 
 def build_params(types: List, args: List) -> bytes:
-    """ ABI encode params according to types """
+    """ABI encode params according to types"""
     return abi.Coder.encode_list(types, args)
 
 
 def calc_address(priv: bytes) -> str:
-    """ Calculate an address from a given private key """
+    """Calculate an address from a given private key"""
     public_key = secp256k1.derive_publicKey(priv)
     _address_bytes = cry.public_key_to_address(public_key)
     address = "0x" + _address_bytes.hex()
@@ -42,42 +42,47 @@ def calc_address(priv: bytes) -> str:
 
 
 def calc_nonce() -> int:
-    """ Calculate a random number for nonce """
+    """Calculate a random number for nonce"""
     return int(secrets.token_hex(8), 16)
 
 
 def calc_blockRef(block_id: str) -> str:
-    """ Calculate a blockRef from a given block_id, id should starts with 0x """
+    """Calculate a blockRef from a given block_id, id should starts with 0x"""
     if not block_id.startswith("0x"):
         raise Exception("block_id should start with 0x")
     return block_id[0:18]
 
 
 def calc_chaintag(hex_str: str) -> int:
-    """ hex_str can be both like '0x4a' or just '4a' """
+    """hex_str can be both like '0x4a' or just '4a'"""
     return int(hex_str, 16)
 
 
 def calc_gas(vm_gas: int, intrinsic_gas: int) -> int:
-    """ Calculate recommended (safe) gas """
+    """Calculate recommended (safe) gas"""
     return vm_gas + intrinsic_gas + 15000
 
 
 def calc_vtho(gas: int, coef: 0) -> int:
-    """ Calculate extimated vtho from gas """
+    """Calculate extimated vtho from gas"""
     if coef > 255 or coef < 0:
         raise Exception("coef: [0~255]")
     return gas * (1 + coef / 255)
 
 
 def any_emulate_failed(emulate_responses: List) -> bool:
-    """ Check the emulate response, if any tx reverted then it is a fail """
+    """Check the emulate response, if any tx reverted then it is a fail"""
     results = [each["reverted"] for each in emulate_responses]
     return any(results)
 
 
+def is_emulate_failed(emulate_response) -> bool:
+    """If a single clause emulation is failed"""
+    return emulate_response["reverted"]
+
+
 def read_vm_gases(emulated_responses: List) -> List[int]:
-    """ Extract vm gases from a batch of emulated executions. """
+    """Extract vm gases from a batch of emulated executions."""
     results = [int(each["gasUsed"]) for each in emulated_responses]
     return results
 
@@ -115,7 +120,7 @@ def build_tx_body(
 
 
 def calc_emulate_tx_body(caller: str, tx_body: dict) -> dict:
-    """ Rip an emulated tx body from a normal tx body."""
+    """Rip an emulated tx body from a normal tx body."""
     # Raise Exception if format check cannot pass.
     transaction.Transaction(tx_body)
     # Check if caller is correct format.
@@ -139,7 +144,7 @@ def calc_emulate_tx_body(caller: str, tx_body: dict) -> dict:
 def calc_tx_unsigned(
     tx_body: dict, encode=False
 ) -> Union[transaction.Transaction, str]:
-    """ Build unsigned transaction from tx body """
+    """Build unsigned transaction from tx body"""
     tx = transaction.Transaction(tx_body)
     if encode:
         return "0x" + tx.encode().hex()
@@ -150,7 +155,7 @@ def calc_tx_unsigned(
 def calc_tx_signed(
     wallet: Wallet, tx_body: dict, encode=False
 ) -> Union[transaction.Transaction, str]:
-    """ Build signed transaction from tx body """
+    """Build signed transaction from tx body"""
     tx = calc_tx_unsigned(tx_body, encode=False)
     message_hash = tx.get_signing_hash()
     signature = wallet.sign(message_hash)
@@ -162,7 +167,7 @@ def calc_tx_signed(
 
 
 def is_readonly(abi_dict: dict):
-    """ Check the abi, see if the function is read-only """
+    """Check the abi, see if the function is read-only"""
     # Check the shape of input data
     abi.FUNCTION(abi_dict)
 
@@ -199,18 +204,23 @@ def calc_revertReason(data: str) -> str:
     return message
 
 
+def inject_decoded_return(e_response: dict) -> dict:
+    """Inject 'decoded' return value into a emulate response"""
+    pass
+
+
 def is_reverted(receipt: dict) -> bool:
-    """ Check receipt to see if tx is reverted """
+    """Check receipt to see if tx is reverted"""
     return receipt["reverted"]
 
 
 def read_created_contracts(receipt: dict) -> list:
-    """ Read receipt and return a list of contract addresses created """
+    """Read receipt and return a list of contract addresses created"""
     a = [x.get("contractAddress") for x in receipt["outputs"]]
     b = [x for x in a if x != None]
     return b
 
 
 def is_contract(account: dict) -> bool:
-    """ Check if the address online is a contract """
+    """Check if the address online is a contract"""
     return account["hasCode"]

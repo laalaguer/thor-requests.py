@@ -385,6 +385,7 @@ class Connect:
         to: str,
         value=0,  # Note: value is in Wei
         gas=0,
+        force=False,  # Force execute even if emulation failed
     ) -> dict:
         """
         Call a contract method,
@@ -422,7 +423,7 @@ class Connect:
 
         # Emulate the tx first.
         e_responses = self.emulate_tx(wallet.getAddress(), tx_body)
-        if any_emulate_failed(e_responses):
+        if any_emulate_failed(e_responses) and force == False:
             raise Exception(f"Tx will revert: {e_responses}")
 
         # Get gas estimation from remote node

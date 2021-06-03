@@ -1,3 +1,4 @@
+from _pytest.fixtures import pytest_sessionstart
 import pytest
 from thor_requests.wallet import Wallet
 from thor_requests.connect import Connect
@@ -75,3 +76,8 @@ def vvet_contract():
 @pytest.fixture
 def vtho_contract():
     return Contract.fromFile("tests/VTHO.json")
+
+
+@pytest.fixture
+def checknumber_contract():
+    return Contract.fromFile("tests/CheckNumber.json")
