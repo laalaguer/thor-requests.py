@@ -1,3 +1,4 @@
 requests
 thor-devkit>=1.0.11
 pytest
+pytest-cov
