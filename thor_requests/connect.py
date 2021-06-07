@@ -12,6 +12,7 @@ from .utils import (
     calc_revertReason,
     calc_tx_signed,
     calc_tx_unsigned,
+    inject_revert_reason,
     read_vm_gases,
     calc_gas,
     build_params,
@@ -193,14 +194,7 @@ class Connect:
             raise Exception(f"HTTP error: {r.status_code} {r.text}")
 
         all_responses = r.json()
-        # Decode the "revert" reason if emulation failed
-        # Create a "revertReason" in the body with plain text reason
-        for response in all_responses:
-            if response["reverted"] == True and response["data"] != "0x":
-                response["decoded"] = {
-                    "revertReason": calc_revertReason(response["data"])
-                }
-        return all_responses
+        return list(map(inject_revert_reason, all_responses))
 
     def replay_tx(self, tx_id: str) -> List[dict]:
         """

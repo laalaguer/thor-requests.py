@@ -209,6 +209,16 @@ def inject_decoded_return(e_response: dict) -> dict:
     pass
 
 
+def inject_revert_reason(e_response: dict) -> dict:
+    """Inject human-readable revert reason if the emulate response failed"""
+    # Decode the "revert" reason if emulation failed
+    # Create a "revertReason" in the body with plain text reason
+    if e_response["reverted"] == True and e_response["data"] != "0x":
+        e_response["decoded"] = {"revertReason": calc_revertReason(e_response["data"])}
+
+    return e_response
+
+
 def is_reverted(receipt: dict) -> bool:
     """Check receipt to see if tx is reverted"""
     return receipt["reverted"]
