@@ -7,6 +7,7 @@ calc: transforming or reform.
 is: boolean functions.
 """
 
+from build.lib.thor_requests.contract import Contract
 import json
 import secrets
 from typing import List, Union
@@ -204,15 +205,57 @@ def calc_revertReason(data: str) -> str:
     return message
 
 
-def inject_decoded_return(e_response: dict) -> dict:
+def inject_decoded_event(
+    event_dict: dict, contract: Contract, target_address: str = None
+) -> dict:
+    """
+    Inject 'decoded' and 'name' into event
+
+    Each event is:
+    {
+        "address": "0x...",
+        "topics": [
+            "0x...",
+            "0x...",
+            ...
+        ],
+        "data": "0x..."
+    }
+    """
+    # target_address doesn't compily with event address
+    if target_address and (event_dict["address"].lower() != target_address.lower()):
+        return event_dict
+
+    e_obj = contract.get_event_by_signature(bytes.fromhex(event_dict["topics"][0][2:]))
+    if not e_obj:  # oops, event not found, cannot decode
+        return event_dict
+    # otherwise can be decoded
+    event_dict["decoded"] = e_obj.decode(
+        bytes.fromhex(event_dict["data"][2:]),
+        [bytes.fromhex(x[2:]) for x in event_dict["topics"]],
+    )
+    event_dict["name"] = e_obj.get_name()
+    return event_dict
+
+
+def inject_decoded_return(e_response: dict, contract: Contract, func_name: str) -> dict:
     """Inject 'decoded' return value into a emulate response"""
-    pass
+    if e_response["reverted"] == True:
+        return e_response
+
+    if (not e_response["data"]) or (e_response["data"] == "0x"):
+        return e_response
+
+    function_obj = contract.get_function_by_name(func_name, True)
+    e_response["decoded"] = function_obj.decode(
+        bytes.fromhex(e_response["data"][2:])  # Remove '0x'
+    )
+
+    return e_response
 
 
 def inject_revert_reason(e_response: dict) -> dict:
-    """Inject human-readable revert reason if the emulate response failed"""
-    # Decode the "revert" reason if emulation failed
-    # Create a "revertReason" in the body with plain text reason
+    """Inject ['decoded''revertReason'] if the emulate response failed"""
     if e_response["reverted"] == True and e_response["data"] != "0x":
         e_response["decoded"] = {"revertReason": calc_revertReason(e_response["data"])}
 

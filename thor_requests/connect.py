@@ -12,6 +12,8 @@ from .utils import (
     calc_revertReason,
     calc_tx_signed,
     calc_tx_unsigned,
+    inject_decoded_event,
+    inject_decoded_return,
     inject_revert_reason,
     read_vm_gases,
     calc_gas,
@@ -331,24 +333,14 @@ class Connect:
         else:
             first_clause = e_responses[0]
             # decode the "return data" from the function call
-            if first_clause["data"] and first_clause["data"] != "0x":
-                f_obj = contract.get_function_by_name(func_name, strict_mode=True)
-                first_clause["decoded"] = f_obj.decode(
-                    bytes.fromhex(first_clause["data"][2:])  # Remove '0x'
-                )
+            first_clause = inject_decoded_return(first_clause, contract, func_name)
             # decode the "event" from the function call
             if len(first_clause["events"]):
-                for each_event in first_clause["events"]:
-                    if each_event["address"].lower() == to.lower():
-                        e_obj = contract.get_event_by_signature(
-                            bytes.fromhex(each_event["topics"][0][2:])
-                        )
-                        if e_obj:
-                            each_event["decoded"] = e_obj.decode(
-                                bytes.fromhex(each_event["data"][2:]),
-                                [bytes.fromhex(x[2:]) for x in each_event["topics"]],
-                            )
-                            each_event["name"] = e_obj.get_name()
+                first_clause["events"] = [
+                    inject_decoded_event(each_event, contract, to)
+                    for each_event in first_clause["events"]
+                ]
+
             return first_clause
 
     def call_multi(self, caller: str, clauses: List, gas: int = 0) -> dict:
