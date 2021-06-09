@@ -10,7 +10,7 @@ setuptools.setup(
     version="0.2.0",
     author="laalaguer",
     author_email="laalaguer@gmail.com",
-    description="VeChain for humans",
+    description="Simple network VeChain SDK for human to interact with the blockchain",
     keywords="vechain thor blockchain sdk requests",
     long_description=long_description,
     long_description_content_type="text/markdown",
