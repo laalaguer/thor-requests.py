@@ -57,12 +57,15 @@ connector.call(caller, contract, func_name, func_params, to, value=0, gas=None)
 # Execute a contract fucntion (spend real gas)
 connector.transact(wallet, contract, func_name, func_params, to, value=0, gas=None)
 
+# WIP
 # Multi clauses support (MTT)
 clause1 = connector.clause(contract, func_name, func_params, to, value=0)
 clause2 = connector.clause(contract, func_name, func_params, to, value=0)
 
+# WIP
 # Call them (won't spend gas)
 connector.call_multi(caller, clauses=[clause1, clause2])
+# WIP
 # Or execute them
 connector.transact_multi(wallet, clauses=[clause1, clause2])
 ```
