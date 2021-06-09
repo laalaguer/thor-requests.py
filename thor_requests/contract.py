@@ -1,6 +1,6 @@
 """ Contract is a representation of an underlying Solidity compiled JSON """
 from typing import Union, List
-from .utils import read_json_file
+from .file_utils import read_json_file
 from thor_devkit import abi
 import json
 

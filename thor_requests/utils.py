@@ -7,7 +7,6 @@ calc: transforming or reform.
 is: boolean functions.
 """
 
-from build.lib.thor_requests.contract import Contract
 import json
 import secrets
 from typing import List, Union
@@ -15,18 +14,13 @@ from typing import List, Union
 from thor_devkit import abi, cry, transaction
 from thor_devkit.cry import address, secp256k1
 
+from .contract import Contract
 from .wallet import Wallet
 
 
 def build_url(base: str, tail: str) -> str:
     """Build a proper URL, base + tail"""
     return base.rstrip("/") + "/" + tail.lstrip("/")
-
-
-def read_json_file(path_like: str) -> dict:
-    """Read json file"""
-    with open(path_like, "r") as f:
-        return json.load(f)
 
 
 def build_params(types: List, args: List) -> bytes:
