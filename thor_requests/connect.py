@@ -327,21 +327,24 @@ class Connect:
         e_responses = self.emulate_tx(caller, tx_body)
         # Should only have one response, since we only have 1 clause
         assert len(e_responses) == 1
+
+        # If emulation failed just return the failed.
         failed = any_emulate_failed(e_responses)
         if failed:
             return e_responses[0]
-        else:
-            first_clause = e_responses[0]
-            # decode the "return data" from the function call
-            first_clause = inject_decoded_return(first_clause, contract, func_name)
-            # decode the "event" from the function call
-            if len(first_clause["events"]):
-                first_clause["events"] = [
-                    inject_decoded_event(each_event, contract, to)
-                    for each_event in first_clause["events"]
-                ]
 
-            return first_clause
+        first_clause = e_responses[0]
+
+        # decode the "return data" from the function call
+        first_clause = inject_decoded_return(first_clause, contract, func_name)
+        # decode the "event" from the function call
+        if len(first_clause["events"]):
+            first_clause["events"] = [
+                inject_decoded_event(each_event, contract, to)
+                for each_event in first_clause["events"]
+            ]
+
+        return first_clause
 
     def call_multi(self, caller: str, clauses: List, gas: int = 0) -> dict:
         """
