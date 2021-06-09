@@ -139,7 +139,7 @@ connector = Connect("http://testnet.veblocks.net")
 # wallet address: 0x7567d83b7b8d80addcb281a71d54fc7b3364ffed
 _wallet = Wallet.fromPrivateKey(bytes.fromhex("dce1443bd2ef0c2631adc1c67e5c93f13dc23a41c18b536effbbdcbcdb96fb65")) 
 
-_contract = Contract.fromFile("/path/to/solc/compiled/WETH9.json")
+_contract = Contract.fromFile("/path/to/solc/compiled/smart_contract.json")
 
 res = connector.deploy(_wallet, _contract)
 print(res)
@@ -155,7 +155,7 @@ from thor_requests.contract import Contract
 connector = Connect("http://testnet.veblocks.net")
 
 _contract_addr = '0x535b9a56c2f03a3658fc8787c44087574eb381fd'
-_contract = Contract.fromFile("/path/to/solc/compiled/WETH9.json")
+_contract = Contract.fromFile("/path/to/solc/compiled/smart_contract.json")
 
 # Emulate the "balanceOf()" function
 res = connector.call(
@@ -231,7 +231,7 @@ connector = Connect("http://testnet.veblocks.net")
 # wallet address: 0x7567d83b7b8d80addcb281a71d54fc7b3364ffed
 _wallet = Wallet.fromPrivateKey(bytes.fromhex("dce1443bd2ef0c2631adc1c67e5c93f13dc23a41c18b536effbbdcbcdb96fb65")) 
 _contract_addr = '0x535b9a56c2f03a3658fc8787c44087574eb381fd'
-_contract = Contract.fromFile("/path/to/solc/compiled/WETH9.json")
+_contract = Contract.fromFile("/path/to/solc/compiled/metadata.json")
 
 # Execute the "deposit()" function. (will pay gas)
 # Send along 5 VET with the tx
