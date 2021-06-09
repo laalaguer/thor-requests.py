@@ -12,7 +12,16 @@ def vtho_contract_address():
 
 @pytest.fixture
 def solo_connector():
-    return Connect("http://localhost:8669")
+    endpoints = ["http://localhost:8669", "http://solo.veblocks.net"]
+    for x in endpoints:
+        c = Connect(x)
+        try:
+            c.get_chainTag()
+            return c
+        except:
+            continue
+
+    raise Exception("Cannot connect to a reliable solo node to run tests")
 
 
 @pytest.fixture
