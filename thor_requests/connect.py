@@ -323,7 +323,7 @@ class Connect:
             gas=gas,
         )
 
-        # Emulate the Tx first
+        # Emulate the Tx
         e_responses = self.emulate_tx(caller, tx_body)
         # Should only have one response, since we only have 1 clause
         assert len(e_responses) == 1
@@ -346,7 +346,7 @@ class Connect:
 
         return first_clause
 
-    def call_multi(self, caller: str, clauses: List, gas: int = 0) -> dict:
+    def call_multi(self, caller: str, clauses: List, gas: int = 0) -> List[dict]:
         """
         Call a contract method (read-only).
         This is a single transaction, multi-clause call.
@@ -358,12 +358,18 @@ class Connect:
         """
         # Build tx body
         tx_body = build_tx_body(
-            [clauses],
+            clauses,
             self.get_chainTag(),
             calc_blockRef(self.get_block("best")["id"]),
             calc_nonce(),
             gas=gas,
         )
+
+        # Emulate the Tx
+        e_responses = self.emulate_tx(caller, tx_body)
+        assert len(e_responses) == len(clauses)
+
+        return e_responses
 
     def transact(
         self,
