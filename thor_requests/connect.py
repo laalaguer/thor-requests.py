@@ -378,9 +378,9 @@ class Connect:
         func_name: str,
         func_params: List,
         to: str,
-        value=0,  # Note: value is in Wei
-        gas=0,
-        force=False,  # Force execute even if emulation failed
+        value: int = 0,  # Note: value is in Wei
+        gas: int = 0,
+        force: bool = False,  # Force execute even if emulation failed
     ) -> dict:
         """
         Call a contract method,
@@ -439,8 +439,40 @@ class Connect:
         encoded_raw = calc_tx_signed(wallet, tx_body, True)
         return self.post_tx(encoded_raw)
 
-    def transact_multi():
-        pass
+    def transact_multi(
+        self, wallet: Wallet, clauses: List, gas: int = 0, force: bool = False
+    ):
+        # Emulate the whole tx first.
+        e_responses = self.call_multi(wallet.getAddress(), clauses, gas)
+        if any_emulate_failed(e_responses) and force == False:
+            raise Exception(f"Tx will revert: {e_responses}")
+
+        # Build the body
+        tx_body = build_tx_body(
+            clauses,
+            self.get_chainTag(),
+            calc_blockRef(self.get_block("best")["id"]),
+            calc_nonce(),
+            gas=gas,
+        )
+
+        # Get gas estimation from remote node
+        # Calculate a safe gas for user
+        _vm_gases = read_vm_gases(e_responses)
+        _supposed_vm_gas = sum(_vm_gases)
+        _tx_obj = calc_tx_unsigned(tx_body)
+        _intrincis_gas = _tx_obj.get_intrinsic_gas()
+        _supposed_safe_gas = calc_gas(_supposed_vm_gas, _intrincis_gas)
+        if gas and gas < _supposed_safe_gas:
+            raise Exception(f"gas {gas} < emulated gas {_supposed_safe_gas}")
+
+        # Fill out the gas for user
+        if not gas:
+            tx_body["gas"] = _supposed_safe_gas
+
+        # Post it to the remote node
+        encoded_raw = calc_tx_signed(wallet, tx_body, True)
+        return self.post_tx(encoded_raw)
 
     def deploy(
         self,

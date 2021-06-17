@@ -131,7 +131,7 @@ def calc_emulate_tx_body(caller: str, tx_body: dict) -> dict:
 
     # Set gas field only when the tx_body set it.
     if int(tx_body["gas"]) > 0:
-        e_tx_body["gas"] = tx_body["gas"]
+        e_tx_body["gas"] = int(tx_body["gas"])
 
     return e_tx_body
 
