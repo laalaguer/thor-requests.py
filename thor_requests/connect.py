@@ -26,13 +26,20 @@ from .contract import Contract
 class Connect:
     """Connect to VeChain"""
 
-    def __init__(self, url):
+    def __init__(self, url, timeout: float = 10):
         self.url = url
+        self.timeout = timeout
+
+    def set_timeout(self, timeout: float):
+        """Adjust the time out for the connector in seconds"""
+        self.timeout = float(timeout)
 
     def get_account(self, address: str, block: str = "best") -> dict:
         """Query account status against the "best" block (or your choice)"""
         url = build_url(self.url, f"/accounts/{address}?revision={block}")
-        r = requests.get(url, headers={"accept": "application/json"})
+        r = requests.get(
+            url, headers={"accept": "application/json"}, timeout=self.timeout
+        )
         if not (r.status_code == 200):
             raise Exception(f"Cant connect to {url}, error {r.text}")
         return r.json()
@@ -78,7 +85,9 @@ class Connect:
     def get_block(self, id_or_number: str = "best") -> dict:
         """Get a block by id or number, default get "best" block"""
         url = build_url(self.url, f"blocks/{id_or_number}")
-        r = requests.get(url, headers={"accept": "application/json"})
+        r = requests.get(
+            url, headers={"accept": "application/json"}, timeout=self.timeout
+        )
         if not (r.status_code == 200):
             raise Exception(f"Cant connect to {url}, error {r.text}")
         return r.json()
@@ -91,7 +100,9 @@ class Connect:
     def get_tx(self, tx_id: str) -> Union[dict, None]:
         """Fetch a transaction, if not found then None"""
         url = build_url(self.url, f"/transactions/{tx_id}")
-        r = requests.get(url, headers={"accept": "application/json"})
+        r = requests.get(
+            url, headers={"accept": "application/json"}, timeout=self.timeout
+        )
         if not (r.status_code == 200):
             raise Exception(f"Cant connect to {url}, error {r.text}")
         return r.json()
@@ -120,6 +131,7 @@ class Connect:
             url,
             headers={"accept": "application/json", "Content-Type": "application/json"},
             json={"raw": raw},
+            timeout=self.timeout,
         )
         if not (r.status_code == 200):
             raise Exception(f"Creation error? HTTP: {r.status_code} {r.text}")
@@ -129,7 +141,9 @@ class Connect:
     def get_tx_receipt(self, tx_id: str) -> Union[dict, None]:
         """Fetch tx receipt as a dict, or None"""
         url = build_url(self.url, f"transactions/{tx_id}/receipt")
-        r = requests.get(url, headers={"accept": "application/json"})
+        r = requests.get(
+            url, headers={"accept": "application/json"}, timeout=self.timeout
+        )
         if not (r.status_code == 200):
             raise Exception(f"Creation error? HTTP: {r.status_code} {r.text}")
 
@@ -191,6 +205,7 @@ class Connect:
             url,
             headers={"accept": "application/json", "Content-Type": "application/json"},
             json=emulate_tx_body,
+            timeout=self.timeout,
         )
         if not (r.status_code == 200):
             raise Exception(f"HTTP error: {r.status_code} {r.text}")
