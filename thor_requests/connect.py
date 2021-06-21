@@ -1,4 +1,6 @@
+from thor_requests.const import VTHO_ABI, VTHO_ADDRESS
 import time
+import json
 from typing import Union, List
 import requests
 from .utils import (
@@ -9,7 +11,6 @@ from .utils import (
     calc_emulate_tx_body,
     calc_nonce,
     any_emulate_failed,
-    calc_revertReason,
     calc_tx_signed,
     calc_tx_unsigned,
     inject_decoded_event,
@@ -27,9 +28,23 @@ class Connect:
     """Connect to VeChain"""
 
     def __init__(self, url, timeout: float = 10):
+        '''
+        Create a new connector to VeChain
+
+        Parameters
+        ----------
+        url : str
+            VeChain node url
+        timeout : float, optional
+            timeout (in seconds) on POST/GET when connecting to VeChain, by default 10
+        '''
         self.url = url
         self.timeout = timeout
 
+    def get_endpoint(self):
+        '''Return which node current connector is linked to'''
+        return self.url
+    
     def set_timeout(self, timeout: float):
         """Adjust the time out for the connector in seconds"""
         self.timeout = float(timeout)
@@ -417,6 +432,8 @@ class Connect:
             VET in Wei to send with this call
         gas:
             Gas you willing to pay to power this contract call.
+        force:
+            Force execution even if emulation failed.
 
         Returns
         -------
@@ -570,3 +587,24 @@ class Connect:
             See post_tx()
         """
         return self.transact(wallet, None, None, None, to, value)
+    
+    def transfer_vtho(self, wallet: Wallet, to: str, vtho_in_wei: int = 0) -> dict:
+        '''
+        Do a vtho transfer
+
+        Parameters
+        ----------
+        wallet : Wallet
+            The sender's wallet
+        to : str
+            The receiver's address
+        vtho_in_wei : int, optional
+            Amount of VTHO (in Wei) to send to receiver, by default 0
+
+        Returns
+        -------
+        dict
+            See post_tx()
+        '''
+        _contract = Contract({"abi":json.loads(VTHO_ABI)})
+        return self.transact(wallet, _contract, 'transfer', [to, vtho_in_wei], VTHO_ADDRESS)

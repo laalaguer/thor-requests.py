@@ -3,6 +3,7 @@ from thor_devkit.cry import mnemonic, keystore, secp256k1
 
 
 def check(priv: bytes):
+    '''Check private key format, or raise exception'''
     if len(priv) != 32:
         raise Exception("Private key should be 32 bytes")
 
@@ -54,4 +55,5 @@ class Wallet:
         return public_key == self.public
 
     def getAddress(self) -> str:
+        '''Get string reprensentation of the wallet address'''
         return self.address
