@@ -572,7 +572,7 @@ class Connect:
 
     def transfer_vet(self, wallet: Wallet, to: str, value: int = 0) -> dict:
         """
-        Do a pure VET transfer
+        Convenient function: do a pure VET transfer
 
         Parameters
         ----------
@@ -590,7 +590,7 @@ class Connect:
     
     def transfer_vtho(self, wallet: Wallet, to: str, vtho_in_wei: int = 0) -> dict:
         '''
-        Do a vtho transfer
+        Convenient function: do a pure vtho transfer
 
         Parameters
         ----------
