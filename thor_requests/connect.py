@@ -68,7 +68,7 @@ class Connect:
         address : str
             The address of the account
         block : str, optional
-            The block ID or number, by default "best"
+            Query against which block, the block ID or number, by default "best"
 
         Returns
         -------
@@ -87,7 +87,7 @@ class Connect:
         address : str
             The address of the account
         block : str, optional
-            The block ID or number, by default "best"
+            Query against which block, the block ID or number, by default "best"
 
         Returns
         -------

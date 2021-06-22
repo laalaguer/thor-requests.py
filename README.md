@@ -1,10 +1,11 @@
+# thor-request.py
 VeChain for humans.
 
 This library enables you to talk to VeChain blockchain without hassle.
 
-Covers most topic on contract interaction, vet transfer and transaction debug.
+- Covers most topic on contract interaction, vet transfer, vtho transfer and transaction debug.
 
-It automatically estimate gas and decode events/revert reasons for you.
+- Automatically estimate gas and decode events/revert reasons for you.
 
 ## Installation
 
@@ -241,10 +242,31 @@ print(res)
 # >>> {'id': '0x51222328b7395860cb9cc6d69d822cf31056851b5694eeccc9f243021eecd547'}
 ```
 
-## Local Development
-```
-... run a local thor node at 127.0.0.1:8669
-... then test the whole suite:
+# Examples (VET and VTHO)
+```python
+from thor_requests.connect import Connect
+from thor_requests.wallet import Wallet
 
-$ make test
+connector = Connect("http://testnet.veblocks.net")
+
+# wallet address: 0x7567d83b7b8d80addcb281a71d54fc7b3364ffed
+_wallet = Wallet.fromPrivateKey(bytes.fromhex("dce1443bd2ef0c2631adc1c67e5c93f13dc23a41c18b536effbbdcbcdb96fb65")) 
+
+# Transfer 3 VET to 0x0000000000000000000000000000000000000000
+connector.transfer_vet(
+    _wallet,
+    to='0x0000000000000000000000000000000000000000',
+    value=3 * (10 ** 18)
+)
+
+# Transfer 3 VTHO to 0x0000000000000000000000000000000000000000
+connector.transfer_vtho(
+    _wallet, 
+    to='0x0000000000000000000000000000000000000000',
+    vtho_in_wei=3 * (10 ** 18)
+)
+
+# Check VET or VTHO balance of an address: 0x0000000000000000000000000000000000000000
+amount_vet = connector.get_vet_balance('0x0000000000000000000000000000000000000000')
+amount_vtho = connector.get_vtho_balance('0x0000000000000000000000000000000000000000')
 ```
