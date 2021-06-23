@@ -271,3 +271,11 @@ def read_created_contracts(receipt: dict) -> list:
 def is_contract(account: dict) -> bool:
     """Check if the address online is a contract"""
     return account["hasCode"]
+
+
+def suggest_gas_for_tx(vm_gas: int, tx_body: dict) -> int:
+    '''Calculate the suggested gas for a transaction'''
+    tx_obj = calc_tx_unsigned(tx_body)
+    intrincis_gas = tx_obj.get_intrinsic_gas()
+    supposed_safe_gas = calc_gas(vm_gas, intrincis_gas)
+    return supposed_safe_gas

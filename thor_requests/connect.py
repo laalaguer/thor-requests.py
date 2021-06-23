@@ -1,4 +1,3 @@
-from thor_requests.const import VTHO_ABI, VTHO_ADDRESS
 import time
 import json
 from typing import Union, List
@@ -12,16 +11,16 @@ from .utils import (
     calc_nonce,
     any_emulate_failed,
     calc_tx_signed,
-    calc_tx_unsigned,
     inject_decoded_event,
     inject_decoded_return,
     inject_revert_reason,
     read_vm_gases,
-    calc_gas,
     build_params,
+    suggest_gas_for_tx,
 )
 from .wallet import Wallet
 from .contract import Contract
+from .const import VTHO_ABI, VTHO_ADDRESS
 
 
 class Connect:
@@ -455,17 +454,15 @@ class Connect:
 
         # Get gas estimation from remote node
         # Calculate a safe gas for user
-        _vm_gases = read_vm_gases(e_responses)
-        _supposed_vm_gas = _vm_gases[0]
-        _tx_obj = calc_tx_unsigned(tx_body)
-        _intrincis_gas = _tx_obj.get_intrinsic_gas()
-        _supposed_safe_gas = calc_gas(_supposed_vm_gas, _intrincis_gas)
-        if gas and gas < _supposed_safe_gas:
-            raise Exception(f"gas {gas} < emulated gas {_supposed_safe_gas}")
+        vm_gas = sum(read_vm_gases(e_responses))
+        safe_gas = suggest_gas_for_tx(vm_gas, tx_body)
+        if gas and gas < safe_gas:
+            if force == False:
+                raise Exception(f"gas {gas} < emulated gas {safe_gas}")
 
         # Fill out the gas for user
         if not gas:
-            tx_body["gas"] = _supposed_safe_gas
+            tx_body["gas"] = safe_gas
 
         # Post it to the remote node
         encoded_raw = calc_tx_signed(wallet, tx_body, True)
@@ -490,17 +487,15 @@ class Connect:
 
         # Get gas estimation from remote node
         # Calculate a safe gas for user
-        _vm_gases = read_vm_gases(e_responses)
-        _supposed_vm_gas = sum(_vm_gases)
-        _tx_obj = calc_tx_unsigned(tx_body)
-        _intrincis_gas = _tx_obj.get_intrinsic_gas()
-        _supposed_safe_gas = calc_gas(_supposed_vm_gas, _intrincis_gas)
-        if gas and gas < _supposed_safe_gas:
-            raise Exception(f"gas {gas} < emulated gas {_supposed_safe_gas}")
+        vm_gas = sum(read_vm_gases(e_responses))
+        safe_gas = suggest_gas_for_tx(vm_gas, tx_body)
+        if gas and gas < safe_gas:
+            if force == False:
+                raise Exception(f"gas {gas} < emulated gas {safe_gas}")
 
         # Fill out the gas for user
         if not gas:
-            tx_body["gas"] = _supposed_safe_gas
+            tx_body["gas"] = safe_gas
 
         # Post it to the remote node
         encoded_raw = calc_tx_signed(wallet, tx_body, True)
@@ -558,14 +553,11 @@ class Connect:
             raise Exception(f"Tx will revert: {e_responses}")
 
         # Get gas estimation from remote
-        _vm_gases = read_vm_gases(e_responses)
-        _supposed_vm_gas = _vm_gases[0]
-        _tx_obj = calc_tx_unsigned(tx_body)
-        _intrincis_gas = _tx_obj.get_intrinsic_gas()
-        _supposed_safe_gas = calc_gas(_supposed_vm_gas, _intrincis_gas)
+        vm_gas = sum(read_vm_gases(e_responses))
+        safe_gas = suggest_gas_for_tx(vm_gas, tx_body)
 
         # Fill out the gas for user.
-        tx_body["gas"] = _supposed_safe_gas
+        tx_body["gas"] = safe_gas
 
         encoded_raw = calc_tx_signed(wallet, tx_body, True)
         return self.post_tx(encoded_raw)
