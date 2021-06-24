@@ -7,7 +7,7 @@ assert long_description
 
 setuptools.setup(
     name="thor-requests",
-    version="0.5.0",
+    version="0.6.0",
     author="laalaguer",
     author_email="laalaguer@gmail.com",
     description="Simple network VeChain SDK for human to interact with the blockchain",
