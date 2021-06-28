@@ -49,6 +49,10 @@ connector.get_tx_receipt(tx_id='')
 connector.wait_for_tx_receipt(tx_id='', time_out=20)
 connector.replay_tx(tx_id='')
 
+# Ticker
+for block in connector.ticker():
+    ....do things
+
 # Deploy a smart contract
 connector.deploy(wallet, contract)
 
@@ -242,7 +246,7 @@ print(res)
 # >>> {'id': '0x51222328b7395860cb9cc6d69d822cf31056851b5694eeccc9f243021eecd547'}
 ```
 
-# Examples (VET and VTHO)
+## Send VET and VTHO
 ```python
 from thor_requests.connect import Connect
 from thor_requests.wallet import Wallet
@@ -269,4 +273,14 @@ connector.transfer_vtho(
 # Check VET or VTHO balance of an address: 0x0000000000000000000000000000000000000000
 amount_vet = connector.get_vet_balance('0x0000000000000000000000000000000000000000')
 amount_vtho = connector.get_vtho_balance('0x0000000000000000000000000000000000000000')
+```
+
+## Ticker to track block mining
+```python
+from thor_requests.connect import Connect
+
+c = Connect("http://testnet.veblocks.net")
+
+for block in c.ticker():
+    ... do something with new block
 ```

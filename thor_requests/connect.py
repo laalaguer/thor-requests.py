@@ -189,6 +189,25 @@ class Connect:
             else:
                 time.sleep(3)
         return None
+    
+    def ticker(self) -> dict:
+        '''
+        Yields the block one by one
+
+        Yields
+        -------
+        Iterator[dict]
+            The block, one by one
+        '''
+        sleep_second = 1
+        cache = self.get_block('best')
+        while True:
+            new_block = self.get_block('best')
+            if new_block['id'] != cache['id']:
+                cache = new_block
+                yield new_block
+            else:
+                time.sleep(sleep_second)
 
     def emulate(self, emulate_tx_body: dict, block: str = "best") -> List[dict]:
         """
