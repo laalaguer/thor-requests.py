@@ -190,13 +190,20 @@ def calc_revertReason(data: str) -> str:
     Exception
         If the revert reason data is not in good shape
     """
-    if not data.startswith("0x08c379a0"):  # abi encoded of "Error(string)"
-        raise Exception(f"{data.hex()} is not a valid error message")
+    if data.startswith("0x08c379a0"): # abi encoded of "Error(string)"
+        message = abi.Coder.decode_single(
+            "string", bytes.fromhex(data.replace("0x08c379a0", ""))
+        )
+        return message
+    
+    # Since 0.8.0 compiler: System Internal Errors
+    if data.startswith("0x4e487b71"): # abi encoded of "Panic(uint256)"
+        message = abi.Coder.decode_single(
+            "uint256", bytes.fromhex(data.replace("0x4e487b71", ""))
+        )
+        return f"Panic({hex(message)})"
 
-    message = abi.Coder.decode_single(
-        "string", bytes.fromhex(data.replace("0x08c379a0", ""))
-    )
-    return message
+    return None
 
 
 def inject_decoded_event(
