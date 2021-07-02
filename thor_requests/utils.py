@@ -197,6 +197,15 @@ def calc_revertReason(data: str) -> str:
         return message
     
     # Since 0.8.0 compiler: System Internal Errors
+    # 0x01: Using assert.
+    # 0x11: SafeMath over-/under-flows.
+    # 0x12: Divide by 0.
+    # 0x21: Conversion into non-existent enum type.
+    # 0x22: Incorrectly encoded storage byte array.
+    # 0x31: pop() on an empty array.
+    # 0x32: Index out of bounds exception.
+    # 0x41: Allocating too much memory or creating a too large array.
+    # 0x51: Calling a zero-initialized variable of internal function type.
     if data.startswith("0x4e487b71"): # abi encoded of "Panic(uint256)"
         message = abi.Coder.decode_single(
             "uint256", bytes.fromhex(data.replace("0x4e487b71", ""))
