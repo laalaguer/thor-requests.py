@@ -33,7 +33,11 @@ class Contract:
 
     def get_bytecode(self, key: str = "bytecode") -> bytes:
         """Get bytecode of this smart contract"""
-        return bytes.fromhex(self.contract_meta[key])
+        _value = str(self.contract_meta[key])
+        if _value.startswith('0x'):
+            return bytes.fromhex(_value[2:])
+        else:
+            return bytes.fromhex(_value)
 
     def get_abis(self) -> List[dict]:
         """Get ABIs of this contract as a list of dicts"""
