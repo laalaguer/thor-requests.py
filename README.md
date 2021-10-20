@@ -27,7 +27,9 @@ connector = Connect("http://testnet.veblocks.net")
 ## API Reference
 
 ```python
-from thor_requests import Connect, Wallet, Contract
+from thor_requests.connect import Connect
+from thor_requests.wallet import Wallet
+from thor_requests.contract import Contract
 
 # Wallet
 wallet = Wallet.fromPrivate(priv=b'')
