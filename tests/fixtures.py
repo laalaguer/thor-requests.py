@@ -12,7 +12,7 @@ def vtho_contract_address():
 
 @pytest.fixture
 def solo_connector():
-    endpoints = ["http://localhost:8669", "http://solo.veblocks.net"]
+    endpoints = ["http://localhost:8669", "https://solo.veblocks.net"]
     for x in endpoints:
         c = Connect(x)
         try:
