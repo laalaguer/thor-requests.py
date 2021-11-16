@@ -42,7 +42,7 @@ def _beautify(response:dict, contract:Contract, func_name:str) -> dict:
 class Connect:
     """Connect to VeChain"""
 
-    def __init__(self, url, timeout: float = 10):
+    def __init__(self, url, timeout: float = 20):
         '''
         Create a new connector to VeChain
 
@@ -51,7 +51,7 @@ class Connect:
         url : str
             VeChain node url
         timeout : float, optional
-            timeout (in seconds) on POST/GET when connecting to VeChain, by default 10
+            timeout (in seconds) on POST/GET when connecting to VeChain, by default 20
         '''
         self.url = url
         self.timeout = timeout
@@ -161,7 +161,7 @@ class Connect:
             url,
             headers={"accept": "application/json", "Content-Type": "application/json"},
             json={"raw": raw},
-            timeout=self.timeout,
+            timeout=self.timeout
         )
         if not (r.status_code == 200):
             raise Exception(f"Creation error? HTTP: {r.status_code} {r.text}")
