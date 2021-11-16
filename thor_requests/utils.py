@@ -7,7 +7,7 @@ calc: transforming or reform.
 is: boolean functions.
 """
 
-import json
+
 import secrets
 from typing import List, Union
 
@@ -215,9 +215,7 @@ def calc_revertReason(data: str) -> str:
     return None
 
 
-def inject_decoded_event(
-    event_dict: dict, contract: Contract, target_address: str = None
-) -> dict:
+def inject_decoded_event(event_dict: dict, contract: Contract) -> dict:
     """
     Inject 'decoded' and 'name' into event
 
@@ -232,10 +230,6 @@ def inject_decoded_event(
         "data": "0x..."
     }
     """
-    # target_address doesn't compily with event address
-    if target_address and (event_dict["address"].lower() != target_address.lower()):
-        return event_dict
-
     e_obj = contract.get_event_by_signature(bytes.fromhex(event_dict["topics"][0][2:]))
     if not e_obj:  # oops, event not found, cannot decode
         return event_dict
@@ -248,28 +242,28 @@ def inject_decoded_event(
     return event_dict
 
 
-def inject_decoded_return(e_response: dict, contract: Contract, func_name: str) -> dict:
+def inject_decoded_return(emulate_response: dict, contract: Contract, func_name: str) -> dict:
     """Inject 'decoded' return value into a emulate response"""
-    if e_response["reverted"] == True:
-        return e_response
+    if emulate_response["reverted"] == True:
+        return emulate_response
 
-    if (not e_response["data"]) or (e_response["data"] == "0x"):
-        return e_response
+    if (not emulate_response["data"]) or (emulate_response["data"] == "0x"):
+        return emulate_response
 
     function_obj = contract.get_function_by_name(func_name, True)
-    e_response["decoded"] = function_obj.decode(
-        bytes.fromhex(e_response["data"][2:])  # Remove '0x'
+    emulate_response["decoded"] = function_obj.decode(
+        bytes.fromhex(emulate_response["data"][2:])  # Remove '0x'
     )
 
-    return e_response
+    return emulate_response
 
 
-def inject_revert_reason(e_response: dict) -> dict:
-    """Inject ['decoded''revertReason'] if the emulate response failed"""
-    if e_response["reverted"] == True and e_response["data"] != "0x":
-        e_response["decoded"] = {"revertReason": calc_revertReason(e_response["data"])}
+def inject_revert_reason(emulate_response: dict) -> dict:
+    """Inject ['decoded']['revertReason'] if the emulate response failed"""
+    if emulate_response["reverted"] == True and emulate_response["data"] != "0x":
+        emulate_response["decoded"] = {"revertReason": calc_revertReason(emulate_response["data"])}
 
-    return e_response
+    return emulate_response
 
 
 def is_reverted(receipt: dict) -> bool:

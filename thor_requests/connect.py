@@ -14,14 +14,30 @@ from .utils import (
     inject_decoded_event,
     inject_decoded_return,
     inject_revert_reason,
+    is_emulate_failed,
     read_vm_gases,
     build_params,
     suggest_gas_for_tx,
 )
 from .wallet import Wallet
 from .contract import Contract
+from .clause import Clause
 from .const import VTHO_ABI, VTHO_ADDRESS
 
+def _beautify(response:dict, contract:Contract, func_name:str) -> dict:
+    ''' Beautify a emulation response dict, to include decoded return and decoded events '''
+    # Decode return value
+    response = inject_decoded_return(response, contract, func_name)
+    # Decode events (if any)
+    if not len(response["events"]): # no events just return
+        return response
+    
+    response["events"] = [
+        inject_decoded_event(each_event, contract)
+        for each_event in response["events"]
+    ]
+
+    return response
 
 class Connect:
     """Connect to VeChain"""
@@ -243,7 +259,7 @@ class Connect:
         if not (r.status_code == 200):
             raise Exception(f"HTTP error: {r.status_code} {r.text}")
 
-        all_responses = r.json()
+        all_responses = r.json() # A list of responses
         return list(map(inject_revert_reason, all_responses))
 
     def replay_tx(self, tx_id: str) -> List[dict]:
@@ -306,7 +322,7 @@ class Connect:
         func_params: List,
         to: str,
         value=0,
-    ) -> dict:
+    ) -> Clause:
         """
         There are two types of calls:
         1) Function call on a smart contract
@@ -334,12 +350,8 @@ class Connect:
         dict
             The clause as a dict: {"to":, "value":, "data":}
         """
-        if contract and func_name:  # Contract call
-            f = contract.get_function_by_name(func_name, strict_mode=True)
-            data = f.encode(func_params, to_hex=True)  # Tx clause data
-            return {"to": to, "value": str(value), "data": data}
-        else:  # VET transfer
-            return {"to": to, "value": str(value), "data": "0x"}
+        return Clause(to, contract, func_name, func_params, value)
+        
 
     def call(
         self,
@@ -360,11 +372,11 @@ class Connect:
         Response type view README.md
         If function has any return value, it will be included in "decoded" field
         """
-        # Get the clause object
+        # Get the Clause object
         clause = self.clause(contract, func_name, func_params, to, value)
         # Build tx body
         tx_body = build_tx_body(
-            [clause],
+            [clause.to_dict()],
             self.get_chainTag(),
             calc_blockRef(self.get_block("best")["id"]),
             calc_nonce(),
@@ -376,25 +388,13 @@ class Connect:
         # Should only have one response, since we only have 1 clause
         assert len(e_responses) == 1
 
-        # If emulation failed just return the failed.
-        failed = any_emulate_failed(e_responses)
-        if failed:
+        # If emulation failed just return the failed response.
+        if any_emulate_failed(e_responses):
             return e_responses[0]
 
-        first_clause = e_responses[0]
+        return _beautify(e_responses[0], clause.get_contract(), clause.get_func_name())
 
-        # decode the "return data" from the function call
-        first_clause = inject_decoded_return(first_clause, contract, func_name)
-        # decode the "event" from the function call
-        if len(first_clause["events"]):
-            first_clause["events"] = [
-                inject_decoded_event(each_event, contract, to)
-                for each_event in first_clause["events"]
-            ]
-
-        return first_clause
-
-    def call_multi(self, caller: str, clauses: List, gas: int = 0) -> List[dict]:
+    def call_multi(self, caller: str, clauses: List[Clause], gas: int = 0) -> List[dict]:
         """
         Call a contract method (read-only).
         This is a single transaction, multi-clause call.
@@ -406,7 +406,7 @@ class Connect:
         """
         # Build tx body
         tx_body = build_tx_body(
-            clauses,
+            [clause.to_dict() for clause in clauses],
             self.get_chainTag(),
             calc_blockRef(self.get_block("best")["id"]),
             calc_nonce(),
@@ -417,7 +417,17 @@ class Connect:
         e_responses = self.emulate_tx(caller, tx_body)
         assert len(e_responses) == len(clauses)
 
-        return e_responses
+        # Try to beautify the responses
+        _responses = []
+        for response, clause in zip(e_responses, clauses):
+            # Failed response just ouput plain response
+            if is_emulate_failed(response):
+                _responses.append(response)
+                continue
+            # Success response inject beautified decoded data
+            _responses.append(_beautify(response, clause.get_contract(), clause.get_func_name()))
+                
+        return _responses
 
     def transact(
         self,
@@ -459,7 +469,7 @@ class Connect:
         """
         clause = self.clause(contract, func_name, func_params, to, value)
         tx_body = build_tx_body(
-            [clause],
+            [clause.to_dict()],
             self.get_chainTag(),
             calc_blockRef(self.get_block("best")["id"]),
             calc_nonce(),
@@ -488,7 +498,7 @@ class Connect:
         return self.post_tx(encoded_raw)
 
     def transact_multi(
-        self, wallet: Wallet, clauses: List, gas: int = 0, force: bool = False
+        self, wallet: Wallet, clauses: List[Clause], gas: int = 0, force: bool = False
     ):
         # Emulate the whole tx first.
         e_responses = self.call_multi(wallet.getAddress(), clauses, gas)
@@ -497,7 +507,7 @@ class Connect:
 
         # Build the body
         tx_body = build_tx_body(
-            clauses,
+            [clause.to_dict() for clause in clauses],
             self.get_chainTag(),
             calc_blockRef(self.get_block("best")["id"]),
             calc_nonce(),
