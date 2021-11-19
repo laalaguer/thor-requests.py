@@ -166,7 +166,7 @@ _contract = Contract.fromFile("/path/to/solc/compiled/smart_contract.json")
 
 # Emulate the "balanceOf()" function
 res = connector.call(
-    caller='',
+    caller='0x....', # fill in your caller address or all zero address
     contract=_contract,
     func_name="balanceOf",
     func_params=['0x7567d83b7b8d80addcb281a71d54fc7b3364ffed'],
