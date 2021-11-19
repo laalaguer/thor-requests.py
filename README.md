@@ -19,7 +19,7 @@ pip3 install -U thor-requests
 ```python
 from thor_requests.connect import Connect
 
-connector = Connect("http://testnet.veblocks.net")
+connector = Connect("https://testnet.veblocks.net")
 
 # ... Now you can access VeChain
 ```
@@ -82,7 +82,7 @@ connector.transact_multi(wallet, clauses=[clause1, clause2])
 ```python
 from thor_requests.connect import Connect
 
-connector = Connect("http://testnet.veblocks.net")
+connector = Connect("https://testnet.veblocks.net")
 
 # Account
 connector.get_account('0x7567d83b7b8d80addcb281a71d54fc7b3364ffed')
@@ -115,7 +115,7 @@ This operation will yield pretty revert reason if any.
 ```python
 from thor_requests.connect import Connect
 
-connector = Connect("http://testnet.veblocks.net")
+connector = Connect("https://testnet.veblocks.net")
 connector.replay_tx("0x1d05a502db56ba46ccd258a5696b9b78cd83de6d0d67f22b297f37e710a72bb5")
 
 # Notice: Revert Reason is decoded for you.
@@ -141,7 +141,7 @@ from thor_requests.connect import Connect
 from thor_requests.wallet import Wallet
 from thor_requests.contract import Contract
 
-connector = Connect("http://testnet.veblocks.net")
+connector = Connect("https://testnet.veblocks.net")
 
 # wallet address: 0x7567d83b7b8d80addcb281a71d54fc7b3364ffed
 _wallet = Wallet.fromPrivateKey(bytes.fromhex("dce1443bd2ef0c2631adc1c67e5c93f13dc23a41c18b536effbbdcbcdb96fb65")) 
@@ -159,7 +159,7 @@ print(res)
 from thor_requests.connect import Connect
 from thor_requests.contract import Contract
 
-connector = Connect("http://testnet.veblocks.net")
+connector = Connect("https://testnet.veblocks.net")
 
 _contract_addr = '0x535b9a56c2f03a3658fc8787c44087574eb381fd'
 _contract = Contract.fromFile("/path/to/solc/compiled/smart_contract.json")
@@ -233,7 +233,7 @@ from thor_requests.connect import Connect
 from thor_requests.wallet import Wallet
 from thor_requests.contract import Contract
 
-connector = Connect("http://testnet.veblocks.net")
+connector = Connect("https://testnet.veblocks.net")
 
 # wallet address: 0x7567d83b7b8d80addcb281a71d54fc7b3364ffed
 _wallet = Wallet.fromPrivateKey(bytes.fromhex("dce1443bd2ef0c2631adc1c67e5c93f13dc23a41c18b536effbbdcbcdb96fb65")) 
@@ -253,7 +253,7 @@ print(res)
 from thor_requests.connect import Connect
 from thor_requests.wallet import Wallet
 
-connector = Connect("http://testnet.veblocks.net")
+connector = Connect("https://testnet.veblocks.net")
 
 # wallet address: 0x7567d83b7b8d80addcb281a71d54fc7b3364ffed
 _wallet = Wallet.fromPrivateKey(bytes.fromhex("dce1443bd2ef0c2631adc1c67e5c93f13dc23a41c18b536effbbdcbcdb96fb65")) 
@@ -281,7 +281,7 @@ amount_vtho = connector.get_vtho_balance('0x000000000000000000000000000000000000
 ```python
 from thor_requests.connect import Connect
 
-c = Connect("http://testnet.veblocks.net")
+c = Connect("https://testnet.veblocks.net")
 
 for block in c.ticker():
     ... do something with new block
