@@ -46,12 +46,12 @@ def solo_wallet():
 
 @pytest.fixture
 def testnet_connector():
-    return Connect("http://testnet.veblocks.net")
+    return Connect("https://testnet.veblocks.net")
 
 
 @pytest.fixture
 def mainnet_connector():
-    return Connect("http://mainnet.veblocks.net")
+    return Connect("https://mainnet.veblocks.net")
 
 
 @pytest.fixture
