@@ -11,6 +11,7 @@ from .utils import (
     calc_nonce,
     any_emulate_failed,
     calc_tx_signed,
+    calc_tx_signed_with_fee_delegation,
     inject_decoded_event,
     inject_decoded_return,
     inject_revert_reason,
@@ -294,7 +295,7 @@ class Connect:
 
         return self.emulate(emulate_body, target_block)
 
-    def emulate_tx(self, address: str, tx_body: dict, block: str = "best"):
+    def emulate_tx(self, address: str, tx_body: dict, block: str = "best", gas_payer: str = None):
         """
         Emulate the execution of a transaction.
 
@@ -312,7 +313,7 @@ class Connect:
         List[dict]
             See emulate()
         """
-        emulate_body = calc_emulate_tx_body(address, tx_body)
+        emulate_body = calc_emulate_tx_body(address, tx_body, gas_payer)
         return self.emulate(emulate_body, block)
 
     def clause(
@@ -362,6 +363,7 @@ class Connect:
         to: str,
         value=0,
         gas=0,  # Note: value is in Wei
+        gas_payer:str=None # Note: gas payer of the tx
     ) -> dict:
         """
         Call a contract method (read-only).
@@ -375,16 +377,18 @@ class Connect:
         # Get the Clause object
         clause = self.clause(contract, func_name, func_params, to, value)
         # Build tx body
+        need_fee_delegation = gas_payer != None
         tx_body = build_tx_body(
             [clause.to_dict()],
             self.get_chainTag(),
             calc_blockRef(self.get_block("best")["id"]),
             calc_nonce(),
             gas=gas,
+            feeDelegation=need_fee_delegation
         )
 
         # Emulate the Tx
-        e_responses = self.emulate_tx(caller, tx_body)
+        e_responses = self.emulate_tx(caller, tx_body, gas_payer=gas_payer)
         # Should only have one response, since we only have 1 clause
         assert len(e_responses) == 1
 
@@ -394,7 +398,7 @@ class Connect:
 
         return _beautify(e_responses[0], clause.get_contract(), clause.get_func_name())
 
-    def call_multi(self, caller: str, clauses: List[Clause], gas: int = 0) -> List[dict]:
+    def call_multi(self, caller: str, clauses: List[Clause], gas: int = 0, gas_payer:str=None) -> List[dict]:
         """
         Call a contract method (read-only).
         This is a single transaction, multi-clause call.
@@ -404,6 +408,7 @@ class Connect:
         Response type view README.md
         If the called functions has any return value, it will be included in "decoded" field
         """
+        need_fee_delegation = gas_payer != None
         # Build tx body
         tx_body = build_tx_body(
             [clause.to_dict() for clause in clauses],
@@ -411,10 +416,11 @@ class Connect:
             calc_blockRef(self.get_block("best")["id"]),
             calc_nonce(),
             gas=gas,
+            feeDelegation=need_fee_delegation
         )
 
         # Emulate the Tx
-        e_responses = self.emulate_tx(caller, tx_body)
+        e_responses = self.emulate_tx(caller, tx_body, gas_payer=gas_payer)
         assert len(e_responses) == len(clauses)
 
         # Try to beautify the responses
@@ -439,6 +445,7 @@ class Connect:
         value: int = 0,  # Note: value is in Wei
         gas: int = 0,
         force: bool = False,  # Force execute even if emulation failed
+        gas_payer:Wallet = None # fee delegation feature
     ) -> dict:
         """
         Call a contract method,
@@ -462,22 +469,30 @@ class Connect:
             Gas you willing to pay to power this contract call.
         force:
             Force execution even if emulation failed.
+        gas_payer:
+            The user wallet to pay for the transaction.
 
         Returns
         -------
             Return value see post_tx()
         """
         clause = self.clause(contract, func_name, func_params, to, value)
+        need_fee_delegation = gas_payer != None
         tx_body = build_tx_body(
             [clause.to_dict()],
             self.get_chainTag(),
             calc_blockRef(self.get_block("best")["id"]),
             calc_nonce(),
             gas=gas,
+            feeDelegation=need_fee_delegation
         )
 
         # Emulate the tx first.
-        e_responses = self.emulate_tx(wallet.getAddress(), tx_body)
+        if not need_fee_delegation:
+            e_responses = self.emulate_tx(wallet.getAddress(), tx_body)
+        else:
+            e_responses = self.emulate_tx(wallet.getAddress(), tx_body, gas_payer=gas_payer.getAddress())
+        
         if any_emulate_failed(e_responses) and force == False:
             raise Exception(f"Tx will revert: {e_responses}")
 
@@ -494,17 +509,24 @@ class Connect:
             tx_body["gas"] = safe_gas
 
         # Post it to the remote node
-        encoded_raw = calc_tx_signed(wallet, tx_body, True)
+        if not need_fee_delegation:
+            encoded_raw = calc_tx_signed(wallet, tx_body, True)
+        else:
+            encoded_raw = calc_tx_signed_with_fee_delegation(wallet, gas_payer, tx_body, True)
         return self.post_tx(encoded_raw)
 
     def transact_multi(
-        self, wallet: Wallet, clauses: List[Clause], gas: int = 0, force: bool = False
+        self, wallet: Wallet, clauses: List[Clause], gas: int = 0, force: bool = False, gas_payer:Wallet = None
     ):
         # Emulate the whole tx first.
-        e_responses = self.call_multi(wallet.getAddress(), clauses, gas)
+        if gas_payer:
+            e_responses = self.call_multi(wallet.getAddress(), clauses, gas, gas_payer=gas_payer.getAddress())
+        else:
+            e_responses = self.call_multi(wallet.getAddress(), clauses, gas)
         if any_emulate_failed(e_responses) and force == False:
             raise Exception(f"Tx will revert: {e_responses}")
 
+        need_fee_delegation = gas_payer != None
         # Build the body
         tx_body = build_tx_body(
             [clause.to_dict() for clause in clauses],
@@ -512,6 +534,7 @@ class Connect:
             calc_blockRef(self.get_block("best")["id"]),
             calc_nonce(),
             gas=gas,
+            feeDelegation=need_fee_delegation
         )
 
         # Get gas estimation from remote node
@@ -527,7 +550,10 @@ class Connect:
             tx_body["gas"] = safe_gas
 
         # Post it to the remote node
-        encoded_raw = calc_tx_signed(wallet, tx_body, True)
+        if not need_fee_delegation:
+            encoded_raw = calc_tx_signed(wallet, tx_body, True)
+        else:
+            encoded_raw = calc_tx_signed_with_fee_delegation(wallet, gas_payer, tx_body, True)
         return self.post_tx(encoded_raw)
 
     def deploy(
@@ -591,7 +617,7 @@ class Connect:
         encoded_raw = calc_tx_signed(wallet, tx_body, True)
         return self.post_tx(encoded_raw)
 
-    def transfer_vet(self, wallet: Wallet, to: str, value: int = 0) -> dict:
+    def transfer_vet(self, wallet: Wallet, to: str, value: int = 0, gas_payer:Wallet=None) -> dict:
         """
         Convenient function: do a pure VET transfer
 
@@ -607,9 +633,9 @@ class Connect:
         dict
             See post_tx()
         """
-        return self.transact(wallet, None, None, None, to, value)
+        return self.transact(wallet, None, None, None, to, value, gas_payer=gas_payer)
     
-    def transfer_vtho(self, wallet: Wallet, to: str, vtho_in_wei: int = 0) -> dict:
+    def transfer_vtho(self, wallet: Wallet, to: str, vtho_in_wei: int = 0, gas_payer:Wallet=None) -> dict:
         '''
         Convenient function: do a pure vtho transfer
 
@@ -628,4 +654,4 @@ class Connect:
             See post_tx()
         '''
         _contract = Contract({"abi":json.loads(VTHO_ABI)})
-        return self.transact(wallet, _contract, 'transfer', [to, vtho_in_wei], VTHO_ADDRESS)
+        return self.transact(wallet, _contract, 'transfer', [to, vtho_in_wei], VTHO_ADDRESS, gas_payer=gas_payer)

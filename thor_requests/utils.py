@@ -91,6 +91,7 @@ def build_tx_body(
     gasPriceCoef: int = 0,
     gas: int = 0,
     dependsOn=None,
+    feeDelegation=False
 ) -> dict:
     """Build a Tx body.
 
@@ -108,13 +109,18 @@ def build_tx_body(
         "nonce": nonce,
     }
 
+    if feeDelegation:
+        body['reserved'] = {
+            'features': 1
+        }
+
     # Raise Exception if format check cannot pass.
     transaction.Transaction(body)
 
     return body
 
 
-def calc_emulate_tx_body(caller: str, tx_body: dict) -> dict:
+def calc_emulate_tx_body(caller: str, tx_body: dict, gaspayer: str=None) -> dict:
     """Rip an emulated tx body from a normal tx body."""
     # Raise Exception if format check cannot pass.
     transaction.Transaction(tx_body)
@@ -132,6 +138,12 @@ def calc_emulate_tx_body(caller: str, tx_body: dict) -> dict:
     # Set gas field only when the tx_body set it.
     if int(tx_body["gas"]) > 0:
         e_tx_body["gas"] = int(tx_body["gas"])
+
+    # Set gas payer only when required.
+    if gaspayer:
+        if not address.is_address(gaspayer):
+            raise Exception(f"{gaspayer} is not an address")
+        e_tx_body["gasPayer"] = gaspayer
 
     return e_tx_body
 
@@ -155,6 +167,47 @@ def calc_tx_signed(
     message_hash = tx.get_signing_hash()
     signature = wallet.sign(message_hash)
     tx.set_signature(signature)
+    if encode:
+        return "0x" + tx.encode().hex()
+    else:
+        return tx
+
+
+def calc_tx_signed_with_fee_delegation(
+    caller: Wallet, payer: Wallet, tx_body: dict, encode=False
+) -> Union[transaction.Transaction, str]:
+    '''
+    Build a Transaction with fee delegation feature
+
+    Parameters
+    ----------
+    caller : Wallet
+        Origin
+    payer : Wallet
+        Gas Payer
+    tx_body : dict
+        Tx body
+    encode : bool, optional
+        If encode to '0x...' string or just transaction object, by default False
+
+    Returns
+    -------
+    Union[transaction.Transaction, str]
+        '0x...' encoded transaction or just transaction object
+    '''
+    tx = calc_tx_unsigned(tx_body, encode=False)
+    assert tx.is_delegated() == True
+
+    callerHash = tx.get_signing_hash()
+    payerHash = tx.get_signing_hash(caller.getAddress().lower())
+
+    finalSig = caller.sign(callerHash) + payer.sign(payerHash)
+
+    tx.set_signature(finalSig)
+
+    assert tx.get_origin().lower() == caller.getAddress().lower()
+    assert tx.get_delegator().lower() == payer.getAddress().lower()
+
     if encode:
         return "0x" + tx.encode().hex()
     else:
