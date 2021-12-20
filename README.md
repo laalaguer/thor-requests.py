@@ -64,15 +64,13 @@ connector.call(caller, contract, func_name, func_params, to, value=0, gas=None)
 # Execute a contract fucntion (spend real gas)
 connector.transact(wallet, contract, func_name, func_params, to, value=0, gas=None)
 
-# WIP
 # Multi clauses support (MTT)
 clause1 = connector.clause(contract, func_name, func_params, to, value=0)
 clause2 = connector.clause(contract, func_name, func_params, to, value=0)
 
-# WIP
 # Call them (won't spend gas)
 connector.call_multi(caller, clauses=[clause1, clause2])
-# WIP
+
 # Or execute them
 connector.transact_multi(wallet, clauses=[clause1, clause2])
 ```
@@ -275,6 +273,73 @@ connector.transfer_vtho(
 # Check VET or VTHO balance of an address: 0x0000000000000000000000000000000000000000
 amount_vet = connector.get_vet_balance('0x0000000000000000000000000000000000000000')
 amount_vtho = connector.get_vtho_balance('0x0000000000000000000000000000000000000000')
+```
+
+## VIP-191 Fee Delegation Feature (I)
+```python
+from thor_requests.connect import Connect
+from thor_requests.wallet import Wallet
+from thor_requests.contract import Contract
+
+connector = Connect("https://testnet.veblocks.net")
+
+# wallet 1: The transaction sender
+_sender = Wallet.fromMnemonic(words=['...', '...', ... ]) 
+
+# wallet 2: The transaction fee payer
+_payer = Wallet.fromPrivateKey(bytes.fromhex("dce1443bd2ef0c2631adc1c67e5c93f13dc23a41c18b536effbbdcbcdb96fb65")) 
+
+# Smart contract
+_contract_addr = '0x535b9a56c2f03a3658fc8787c44087574eb381fd'
+_contract = Contract.fromFile("/path/to/solc/compiled/metadata.json")
+
+# For example, 
+# "The sender" execute the "deposit()" function on the smart contract, with 5 VET within the transaction
+# Transaction paid by "the payer".
+res = connector.transact(
+    _sender,
+    _contract,
+    "deposit",
+    [],
+    to=_contract_addr,
+    value=5 * (10 ** 18),
+    gas_payer=_payer
+)
+print(res)
+# >>> {'id': '0x51222328b7395860cb9cc6d69d822cf31056851b5694eeccc9f243021eecd547'}
+```
+
+## VIP-191 Fee Delegation Feature (II)
+
+```python
+# Send VET or VTHO using fee delegation
+
+from thor_requests.connect import Connect
+from thor_requests.wallet import Wallet
+
+connector = Connect("https://testnet.veblocks.net")
+
+# sender wallet
+_sender = Wallet.fromMnemonic(words=['...', '...', ... ])
+
+# gas payer wallet
+_payer = Wallet.fromPrivateKey(bytes.fromhex("dce1443bd2ef0c2631adc1c67e5c93f13dc23a41c18b536effbbdcbcdb96fb65")) 
+
+# Transfer 3 VET from _sender to 0x0000000000000000000000000000000000000000
+connector.transfer_vet(
+    _sender,
+    to='0x0000000000000000000000000000000000000000',
+    value=3 * (10 ** 18),
+    gas_payer=_payer
+)
+
+# Transfer 3 VTHO from _sender to 0x0000000000000000000000000000000000000000
+connector.transfer_vtho(
+    _sender, 
+    to='0x0000000000000000000000000000000000000000',
+    vtho_in_wei=3 * (10 ** 18),
+    gas_payer=_payer
+)
 ```
 
 ## Ticker to track block mining
