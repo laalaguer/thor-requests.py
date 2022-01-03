@@ -25,20 +25,22 @@ from .contract import Contract
 from .clause import Clause
 from .const import VTHO_ABI, VTHO_ADDRESS
 
-def _beautify(response:dict, contract:Contract, func_name:str) -> dict:
+
+def _beautify(response: dict, contract: Contract, func_name: str) -> dict:
     ''' Beautify a emulation response dict, to include decoded return and decoded events '''
     # Decode return value
     response = inject_decoded_return(response, contract, func_name)
     # Decode events (if any)
-    if not len(response["events"]): # no events just return
+    if not len(response["events"]):  # no events just return
         return response
-    
+
     response["events"] = [
         inject_decoded_event(each_event, contract)
         for each_event in response["events"]
     ]
 
     return response
+
 
 class Connect:
     """Connect to VeChain"""
@@ -60,7 +62,7 @@ class Connect:
     def get_endpoint(self):
         '''Return which node current connector is linked to'''
         return self.url
-    
+
     def set_timeout(self, timeout: float):
         """Adjust the time out for the connector in seconds"""
         self.timeout = float(timeout)
@@ -160,7 +162,8 @@ class Connect:
         url = build_url(self.url, "transactions")
         r = requests.post(
             url,
-            headers={"accept": "application/json", "Content-Type": "application/json"},
+            headers={"accept": "application/json",
+                     "Content-Type": "application/json"},
             json={"raw": raw},
             timeout=self.timeout
         )
@@ -206,7 +209,7 @@ class Connect:
             else:
                 time.sleep(3)
         return None
-    
+
     def ticker(self) -> dict:
         '''
         Yields the block one by one
@@ -253,14 +256,15 @@ class Connect:
         url = build_url(self.url, f"/accounts/*?revision={block}")
         r = requests.post(
             url,
-            headers={"accept": "application/json", "Content-Type": "application/json"},
+            headers={"accept": "application/json",
+                     "Content-Type": "application/json"},
             json=emulate_tx_body,
             timeout=self.timeout,
         )
         if not (r.status_code == 200):
             raise Exception(f"HTTP error: {r.status_code} {r.text}")
 
-        all_responses = r.json() # A list of responses
+        all_responses = r.json()  # A list of responses
         return list(map(inject_revert_reason, all_responses))
 
     def replay_tx(self, tx_id: str) -> List[dict]:
@@ -352,7 +356,6 @@ class Connect:
             The clause as a dict: {"to":, "value":, "data":}
         """
         return Clause(to, contract, func_name, func_params, value)
-        
 
     def call(
         self,
@@ -363,7 +366,8 @@ class Connect:
         to: str,
         value=0,
         gas=0,  # Note: value is in Wei
-        gas_payer:str=None # Note: gas payer of the tx
+        gas_payer: str = None,  # Note: gas payer of the tx
+        block: str = "best"  # Target at which block
     ) -> dict:
         """
         Call a contract method (read-only).
@@ -388,7 +392,8 @@ class Connect:
         )
 
         # Emulate the Tx
-        e_responses = self.emulate_tx(caller, tx_body, gas_payer=gas_payer)
+        e_responses = self.emulate_tx(
+            caller, tx_body, block=block, gas_payer=gas_payer)
         # Should only have one response, since we only have 1 clause
         assert len(e_responses) == 1
 
@@ -398,7 +403,7 @@ class Connect:
 
         return _beautify(e_responses[0], clause.get_contract(), clause.get_func_name())
 
-    def call_multi(self, caller: str, clauses: List[Clause], gas: int = 0, gas_payer:str=None) -> List[dict]:
+    def call_multi(self, caller: str, clauses: List[Clause], gas: int = 0, gas_payer: str = None, block="best") -> List[dict]:
         """
         Call a contract method (read-only).
         This is a single transaction, multi-clause call.
@@ -420,7 +425,8 @@ class Connect:
         )
 
         # Emulate the Tx
-        e_responses = self.emulate_tx(caller, tx_body, gas_payer=gas_payer)
+        e_responses = self.emulate_tx(
+            caller, tx_body, block=block, gas_payer=gas_payer)
         assert len(e_responses) == len(clauses)
 
         # Try to beautify the responses
@@ -431,8 +437,9 @@ class Connect:
                 _responses.append(response)
                 continue
             # Success response inject beautified decoded data
-            _responses.append(_beautify(response, clause.get_contract(), clause.get_func_name()))
-                
+            _responses.append(
+                _beautify(response, clause.get_contract(), clause.get_func_name()))
+
         return _responses
 
     def transact(
@@ -445,7 +452,7 @@ class Connect:
         value: int = 0,  # Note: value is in Wei
         gas: int = 0,
         force: bool = False,  # Force execute even if emulation failed
-        gas_payer:Wallet = None # fee delegation feature
+        gas_payer: Wallet = None  # fee delegation feature
     ) -> dict:
         """
         Call a contract method,
@@ -491,8 +498,9 @@ class Connect:
         if not need_fee_delegation:
             e_responses = self.emulate_tx(wallet.getAddress(), tx_body)
         else:
-            e_responses = self.emulate_tx(wallet.getAddress(), tx_body, gas_payer=gas_payer.getAddress())
-        
+            e_responses = self.emulate_tx(
+                wallet.getAddress(), tx_body, gas_payer=gas_payer.getAddress())
+
         if any_emulate_failed(e_responses) and force == False:
             raise Exception(f"Tx will revert: {e_responses}")
 
@@ -512,15 +520,17 @@ class Connect:
         if not need_fee_delegation:
             encoded_raw = calc_tx_signed(wallet, tx_body, True)
         else:
-            encoded_raw = calc_tx_signed_with_fee_delegation(wallet, gas_payer, tx_body, True)
+            encoded_raw = calc_tx_signed_with_fee_delegation(
+                wallet, gas_payer, tx_body, True)
         return self.post_tx(encoded_raw)
 
     def transact_multi(
-        self, wallet: Wallet, clauses: List[Clause], gas: int = 0, force: bool = False, gas_payer:Wallet = None
+        self, wallet: Wallet, clauses: List[Clause], gas: int = 0, force: bool = False, gas_payer: Wallet = None
     ):
         # Emulate the whole tx first.
         if gas_payer:
-            e_responses = self.call_multi(wallet.getAddress(), clauses, gas, gas_payer=gas_payer.getAddress())
+            e_responses = self.call_multi(
+                wallet.getAddress(), clauses, gas, gas_payer=gas_payer.getAddress())
         else:
             e_responses = self.call_multi(wallet.getAddress(), clauses, gas)
         if any_emulate_failed(e_responses) and force == False:
@@ -553,7 +563,8 @@ class Connect:
         if not need_fee_delegation:
             encoded_raw = calc_tx_signed(wallet, tx_body, True)
         else:
-            encoded_raw = calc_tx_signed_with_fee_delegation(wallet, gas_payer, tx_body, True)
+            encoded_raw = calc_tx_signed_with_fee_delegation(
+                wallet, gas_payer, tx_body, True)
         return self.post_tx(encoded_raw)
 
     def deploy(
@@ -617,7 +628,7 @@ class Connect:
         encoded_raw = calc_tx_signed(wallet, tx_body, True)
         return self.post_tx(encoded_raw)
 
-    def transfer_vet(self, wallet: Wallet, to: str, value: int = 0, gas_payer:Wallet=None) -> dict:
+    def transfer_vet(self, wallet: Wallet, to: str, value: int = 0, gas_payer: Wallet = None) -> dict:
         """
         Convenient function: do a pure VET transfer
 
@@ -634,8 +645,8 @@ class Connect:
             See post_tx()
         """
         return self.transact(wallet, None, None, None, to, value, gas_payer=gas_payer)
-    
-    def transfer_vtho(self, wallet: Wallet, to: str, vtho_in_wei: int = 0, gas_payer:Wallet=None) -> dict:
+
+    def transfer_vtho(self, wallet: Wallet, to: str, vtho_in_wei: int = 0, gas_payer: Wallet = None) -> dict:
         '''
         Convenient function: do a pure vtho transfer
 
@@ -653,5 +664,5 @@ class Connect:
         dict
             See post_tx()
         '''
-        _contract = Contract({"abi":json.loads(VTHO_ABI)})
+        _contract = Contract({"abi": json.loads(VTHO_ABI)})
         return self.transact(wallet, _contract, 'transfer', [to, vtho_in_wei], VTHO_ADDRESS, gas_payer=gas_payer)
