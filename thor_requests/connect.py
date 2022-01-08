@@ -115,11 +115,18 @@ class Connect:
         account_status = self.get_account(address)
         return int(account_status["energy"], 16)
 
-    def get_block(self, id_or_number: str = "best") -> dict:
-        """Get a block by id or number, default get "best" block"""
+    def get_block(self, id_or_number: str = "best", expanded: bool = False) -> dict:
+        """
+            Get a block by id or number, default get "best" block
+            If expanded is True, will return a block with expanded details.
+        """
         url = build_url(self.url, f"blocks/{id_or_number}")
+        if expanded:
+            params = {'expanded': 'true'}
+        else:
+            params = {'expanded': 'false'}
         r = requests.get(
-            url, headers={"accept": "application/json"}, timeout=self.timeout
+            url, params=params, headers={"accept": "application/json"}, timeout=self.timeout
         )
         if not (r.status_code == 200):
             raise Exception(f"Cant connect to {url}, error {r.text}")
