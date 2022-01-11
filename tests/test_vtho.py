@@ -36,6 +36,31 @@ def test_transfer_vtho_easy(
     assert updated_balance == 3 * (10 ** 18)
 
 
+def test_transfer_vip180_easy(
+    solo_connector,
+    solo_wallet,
+    clean_wallet,
+    vtho_contract_address,
+    vtho_contract
+):
+    # Check the sender's vtho balance
+    sender_balance = solo_connector.get_vtho_balance(solo_wallet.getAddress())
+    assert sender_balance > 0
+
+    # Check the receiver's vtho balance
+    receiver_balance = solo_connector.get_vtho_balance(clean_wallet.getAddress())
+    assert receiver_balance == 0
+
+    # Do the vtho transfer (via common transfer token function)
+    res = solo_connector.transfer_token(solo_wallet, clean_wallet.getAddress(), vtho_contract_address, 3 * (10 ** 18))
+    tx_id = res["id"]
+    receipt = solo_connector.wait_for_tx_receipt(tx_id)
+
+    # Check the receiver's vtho balance
+    updated_balance = solo_connector.get_vtho_balance(clean_wallet.getAddress())
+    assert updated_balance == 3 * (10 ** 18)
+
+
 def test_transfer_vtho_hard(
     solo_connector,
     solo_wallet,

@@ -246,7 +246,7 @@ print(res)
 # >>> {'id': '0x51222328b7395860cb9cc6d69d822cf31056851b5694eeccc9f243021eecd547'}
 ```
 
-## Send VET and VTHO
+## Send VET and VTHO (or any vip180 token)
 ```python
 from thor_requests.connect import Connect
 from thor_requests.wallet import Wallet
@@ -270,6 +270,14 @@ connector.transfer_vtho(
     vtho_in_wei=3 * (10 ** 18)
 )
 
+# Transfer 3 OCE to 0x0000000000000000000000000000000000000000
+connector.transfer_token(
+    _wallet, 
+    to='0x0000000000000000000000000000000000000000',
+    token_contract_addr='0x0ce6661b4ba86a0ea7ca2bd86a0de87b0b860f14', # OCE smart contract
+    amount_in_wei=3 * (10 ** 18)
+)
+
 # Check VET or VTHO balance of an address: 0x0000000000000000000000000000000000000000
 amount_vet = connector.get_vet_balance('0x0000000000000000000000000000000000000000')
 amount_vtho = connector.get_vtho_balance('0x0000000000000000000000000000000000000000')
@@ -277,6 +285,10 @@ amount_vtho = connector.get_vtho_balance('0x000000000000000000000000000000000000
 
 ## VIP-191 Fee Delegation Feature (I)
 ```python
+# Sign a local transaction if you have:
+# 1) Wallet to originate the transaction
+# 2) Wallet to pay for the gas fee
+
 from thor_requests.connect import Connect
 from thor_requests.wallet import Wallet
 from thor_requests.contract import Contract
@@ -310,9 +322,52 @@ print(res)
 ```
 
 ## VIP-191 Fee Delegation Feature (II)
+```python
+# Sign a remotely received raw transaction if you have:
+# 1) A judgment function to decide if you want to sign the raw tx or not.
+# 2) A sponsor wallet to pay for the gas fee
+
+# On user's side, create a transaction body
+delegated_body = {
+    "chainTag": 1,
+    "blockRef": "0x00000000aabbccdd",
+    "expiration": 32,
+    "clauses": [
+        {
+            "to": "0x7567d83b7b8d80addcb281a71d54fc7b3364ffed",
+            "value": 10000,
+            "data": "0x000000606060"
+        }
+    ],
+    "gasPriceCoef": 128,
+    "gas": 21000,
+    "dependsOn": None,
+    "nonce": 12345678,
+    "reserved": {
+        "features": 1
+    }
+}
+
+delegated_tx = transaction.Transaction(delegated_body)
+raw_tx = '0x' + delegated_tx.encode().hex()
+
+# We give an example judgment function that allows all transaction to be signed
+def allPass(tx_payer:str, tx_origin:str, transaction):
+    ''' Run analyze on the given params, shall return bool, error_message '''
+    return True, ''
+
+your_sponsor_wallet = ... # your local sponsor wallet
+tx_origin_address = ... # '0x...' string, the transaction's originator
+# Sign it with a local sponsor wallet
+result = utils.sign_delegated_tx(your_sponsor_wallet, tx_origin_address, raw_tx, False, allPass)
+print(result['signature']) # This is the sponsor signature you are looking for
+```
+
+
+## VIP-191 Fee Delegation Feature (III)
 
 ```python
-# Send VET or VTHO using fee delegation
+# Quickly send VET or VTHO using fee delegation
 
 from thor_requests.connect import Connect
 from thor_requests.wallet import Wallet

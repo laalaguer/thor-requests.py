@@ -9,7 +9,7 @@ is: boolean functions.
 
 
 import secrets
-from typing import List, Union
+from typing import Callable, List, Union
 
 from thor_devkit import abi, cry, transaction
 from thor_devkit.cry import address, secp256k1
@@ -342,3 +342,56 @@ def suggest_gas_for_tx(vm_gas: int, tx_body: dict) -> int:
     intrincis_gas = tx_obj.get_intrinsic_gas()
     supposed_safe_gas = calc_gas(vm_gas, intrincis_gas)
     return supposed_safe_gas
+
+
+def sign_delegated_tx(payer: Wallet, tx_origin: str, raw_tx: str, tx_origin_signed:bool, judgment_fn: Callable) -> dict:
+    '''
+    Sign a remote extenal delegated fee transaction, according to VIP-191 and VIP-201 standard.
+    You should pass in a judgement function to decide whether sign the transaction or not.
+
+    Parameters
+    ----------
+    payer : Wallet
+        The gas payer
+    tx_origin : str
+        The transaction origin (address)
+    raw_tx : str
+        '0x' prefixed raw transaction. ('0x.....')
+    tx_origin_signed : bool
+        Whether or not origin has signed the tx (should match the raw_tx status you send in)
+    judgment_fn : Callable
+        Accepts the params of (tx_payer:str, tx_origin:str, transaction:Transaction)
+        And returns a result of (success:book, error_message:str)
+    Returns
+    -------
+    dict
+        If successfully signed return {'signature': '0x...', 'error_message': ''}
+        If failed to sign return {'signature': '', 'error_message': 'some text here'}
+
+    Raises
+    ------
+    AttributeError
+        Origin address not valid
+    AttributeError
+        raw_tx is not delegated tx
+    Exception
+        If any error occurs during unpacking raw_tx
+    '''
+    # Check tx_origin address
+    # Raise exception if not valid
+    if not address.is_address(tx_origin):
+        raise AttributeError(f'tx_origin: {tx_origin} not valid address')
+    # Decode raw_tx back to transaction object or body
+    # Raise exception if not valid
+    tx = transaction.Transaction.decode(raw=bytes.fromhex(raw_tx.lstrip('0x')), unsigned=(not tx_origin_signed))
+    if not tx.is_delegated():
+        raise AttributeError(f'raw_tx: is not delegated tx')
+    # judge the (tx_payer, tx_origin, transaction), decide if can sign or not
+    should_sign, error_message = judgment_fn(payer.getAddress(), tx_origin, tx)
+
+    if should_sign == True:
+        payerHash = tx.get_signing_hash(delegate_for=tx_origin.lower())
+        payerSigBytes = payer.sign(payerHash)
+        return { 'signature': '0x' + payerSigBytes.hex(), 'error_message': '' }
+    else:
+        return { 'signature': '', 'error_message': error_message }

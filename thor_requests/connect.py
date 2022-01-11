@@ -673,3 +673,26 @@ class Connect:
         '''
         _contract = Contract({"abi": json.loads(VTHO_ABI)})
         return self.transact(wallet, _contract, 'transfer', [to, vtho_in_wei], VTHO_ADDRESS, gas_payer=gas_payer)
+    
+    def transfer_token(self, wallet: Wallet, to: str, token_contract_addr: str, amount_in_wei: int = 0, gas_payer: Wallet = None) -> dict:
+        '''
+        Convenient function: do a pure vip180 token transfer
+
+        Parameters
+        ----------
+        wallet : Wallet
+            The sender's wallet
+        to : str
+            The receiver's address
+        token_contract_addr : str
+            The token's smart contract address
+        amount_in_wei : int, optional
+            Amount of token (in Wei) to send to receiver, by default 0
+
+        Returns
+        -------
+        dict
+            See post_tx()
+        '''
+        _contract = Contract({"abi": json.loads(VTHO_ABI)})
+        return self.transact(wallet, _contract, 'transfer', [to, amount_in_wei], token_contract_addr, gas_payer=gas_payer)

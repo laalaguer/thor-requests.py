@@ -8,6 +8,7 @@ from .fixtures import (
     vtho_contract,
 )
 from thor_requests import utils
+from thor_devkit import transaction
 
 
 def test_vet_transfer(solo_connector, solo_wallet, clean_wallet):
@@ -97,3 +98,74 @@ def test_transfer_vtho_easy(
         clean_wallet.getAddress()
     )
     assert updated_balance == 0
+
+
+def test_sign_fee_delegation_allow(
+    solo_wallet,
+    clean_wallet
+):
+    delegated_body = {
+        "chainTag": 1,
+        "blockRef": "0x00000000aabbccdd",
+        "expiration": 32,
+        "clauses": [
+            {
+                "to": "0x7567d83b7b8d80addcb281a71d54fc7b3364ffed",
+                "value": 10000,
+                "data": "0x000000606060"
+            }
+        ],
+        "gasPriceCoef": 128,
+        "gas": 21000,
+        "dependsOn": None,
+        "nonce": 12345678,
+        "reserved": {
+            "features": 1
+        }
+    }
+
+    delegated_tx = transaction.Transaction(delegated_body)
+    raw_tx = '0x' + delegated_tx.encode().hex()
+
+    def allPass(tx_payer:str, tx_origin:str, transaction):
+        return True, ''
+    
+    result = utils.sign_delegated_tx(solo_wallet, clean_wallet.getAddress(), raw_tx, False, allPass)
+    assert len(result['signature']) > 0
+    assert len(result['error_message']) == 0
+
+
+def test_sign_fee_delegation_reject(
+    solo_wallet,
+    clean_wallet
+):
+    ''' Reject the tx sign '''
+    delegated_body = {
+        "chainTag": 1,
+        "blockRef": "0x00000000aabbccdd",
+        "expiration": 32,
+        "clauses": [
+            {
+                "to": "0x7567d83b7b8d80addcb281a71d54fc7b3364ffed",
+                "value": 10000,
+                "data": "0x000000606060"
+            }
+        ],
+        "gasPriceCoef": 128,
+        "gas": 21000,
+        "dependsOn": None,
+        "nonce": 12345678,
+        "reserved": {
+            "features": 1
+        }
+    }
+
+    delegated_tx = transaction.Transaction(delegated_body)
+    raw_tx = '0x' + delegated_tx.encode().hex()
+
+    def allPass(tx_payer:str, tx_origin:str, transaction):
+        return False, 'I just dont allow this tx to pass'
+    
+    result = utils.sign_delegated_tx(solo_wallet, clean_wallet.getAddress(), raw_tx, False, allPass)
+    assert len(result['signature']) == 0
+    assert result['error_message'] == 'I just dont allow this tx to pass'
