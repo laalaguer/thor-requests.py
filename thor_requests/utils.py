@@ -128,11 +128,19 @@ def calc_emulate_tx_body(caller: str, tx_body: dict, gaspayer: str=None) -> dict
     if not address.is_address(caller):
         raise Exception(f"{caller} is not an address")
 
+    # Caution: in emulation, clauses.clause.value must be of type string
+    e_clauses = []
+    for clause in tx_body['clauses']:
+        e_clauses.append({
+            'to': clause['to'],
+            'value': str(clause['value']),
+            'data': clause['data']
+        })
     e_tx_body = {
         "caller": caller,
         "blockRef": tx_body["blockRef"],
         "expiration": tx_body["expiration"],
-        "clauses": tx_body["clauses"],
+        "clauses": e_clauses,
     }
 
     # Set gas field only when the tx_body set it.
