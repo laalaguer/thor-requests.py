@@ -93,7 +93,7 @@ class Connect:
         int
             The balance of the VET in Wei
         """
-        account_status = self.get_account(address)
+        account_status = self.get_account(address, block)
         return int(account_status["balance"], 16)
 
     def get_vtho_balance(self, address: str, block: str = "best") -> int:
@@ -112,7 +112,7 @@ class Connect:
         int
             The balance of the VTHO in Wei
         """
-        account_status = self.get_account(address)
+        account_status = self.get_account(address, block)
         return int(account_status["energy"], 16)
 
     def get_block(self, id_or_number: str = "best", expanded: bool = False) -> dict:
