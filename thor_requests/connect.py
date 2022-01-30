@@ -457,6 +457,7 @@ class Connect:
         func_params: List,
         to: str,
         value: int = 0,  # Note: value is in Wei
+        gasPriceCoef: int = 0,
         gas: int = 0,
         force: bool = False,  # Force execute even if emulation failed
         gas_payer: Wallet = None  # fee delegation feature
@@ -479,6 +480,8 @@ class Connect:
             Function params. eg. ['0x123..efg', '100']
         value:
             VET in Wei to send with this call
+        gasPriceCoef:
+            Coefficient used to calculate the gas price for the transaction. eg. [0~255]
         gas:
             Gas you willing to pay to power this contract call.
         force:
@@ -497,6 +500,7 @@ class Connect:
             self.get_chainTag(),
             calc_blockRef(self.get_block("best")["id"]),
             calc_nonce(),
+            gasPriceCoef=gasPriceCoef,
             gas=gas,
             feeDelegation=need_fee_delegation
         )
@@ -532,7 +536,7 @@ class Connect:
         return self.post_tx(encoded_raw)
 
     def transact_multi(
-        self, wallet: Wallet, clauses: List[Clause], gas: int = 0, force: bool = False, gas_payer: Wallet = None
+        self, wallet: Wallet, clauses: List[Clause], gasPriceCoef: int = 0, gas: int = 0, force: bool = False, gas_payer: Wallet = None
     ):
         # Emulate the whole tx first.
         if gas_payer:
@@ -550,6 +554,7 @@ class Connect:
             self.get_chainTag(),
             calc_blockRef(self.get_block("best")["id"]),
             calc_nonce(),
+            gasPriceCoef=gasPriceCoef,
             gas=gas,
             feeDelegation=need_fee_delegation
         )
