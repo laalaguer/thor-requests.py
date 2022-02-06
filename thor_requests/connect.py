@@ -499,6 +499,8 @@ class Connect:
             self.get_chainTag(),
             calc_blockRef(self.get_block("best")["id"]),
             calc_nonce(),
+            dependsOn=dependsOn,
+            expiration=expiration,
             gas=gas,
             feeDelegation=need_fee_delegation
         )
