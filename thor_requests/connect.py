@@ -458,6 +458,8 @@ class Connect:
         to: str,
         value: int = 0,  # Note: value is in Wei
         gas: int = 0,
+        dependsOn=None,
+        expiration: int = 32,
         force: bool = False,  # Force execute even if emulation failed
         gas_payer: Wallet = None  # fee delegation feature
     ) -> dict:
