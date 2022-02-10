@@ -457,8 +457,10 @@ class Connect:
         func_params: List,
         to: str,
         value: int = 0,  # Note: value is in Wei
+        expiration: int = 32,
         gasPriceCoef: int = 0,
         gas: int = 0,
+        dependsOn=None, # ID of old Tx that this tx depends on, None or string
         force: bool = False,  # Force execute even if emulation failed
         gas_payer: Wallet = None  # fee delegation feature
     ) -> dict:
@@ -480,10 +482,14 @@ class Connect:
             Function params. eg. ['0x123..efg', '100']
         value:
             VET in Wei to send with this call
+        expiration:
+            Expire this tx after how many blocks, relative to blockRef
         gasPriceCoef:
             Coefficient used to calculate the gas price for the transaction. eg. [0~255]
         gas:
             Gas you willing to pay to power this contract call.
+        dependsOn:
+            ID of the transaction which the current transaction depends on. [32 bytes]
         force:
             Force execution even if emulation failed.
         gas_payer:
@@ -501,6 +507,8 @@ class Connect:
             calc_blockRef(self.get_block("best")["id"]),
             calc_nonce(),
             gasPriceCoef=gasPriceCoef,
+            dependsOn=dependsOn,
+            expiration=expiration,
             gas=gas,
             feeDelegation=need_fee_delegation
         )
@@ -536,7 +544,15 @@ class Connect:
         return self.post_tx(encoded_raw)
 
     def transact_multi(
-        self, wallet: Wallet, clauses: List[Clause], gasPriceCoef: int = 0, gas: int = 0, force: bool = False, gas_payer: Wallet = None
+        self,
+        wallet: Wallet,
+        clauses: List[Clause],
+        gasPriceCoef: int = 0,
+        gas: int = 0,
+        dependsOn=None, # ID of old Tx that this tx depends on, None or string
+        expiration: int = 32,
+        force: bool = False,
+        gas_payer: Wallet = None
     ):
         # Emulate the whole tx first.
         if gas_payer:
@@ -554,7 +570,9 @@ class Connect:
             self.get_chainTag(),
             calc_blockRef(self.get_block("best")["id"]),
             calc_nonce(),
+            expiration=expiration,
             gasPriceCoef=gasPriceCoef,
+            dependsOn=dependsOn,
             gas=gas,
             feeDelegation=need_fee_delegation
         )
