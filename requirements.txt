@@ -1,6 +1,6 @@
 wheel
 twine
 requests
-thor-devkit>=1.0.12
+thor-devkit==1.0.12
 pytest
 pytest-cov
